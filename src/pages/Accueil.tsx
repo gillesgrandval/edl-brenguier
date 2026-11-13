@@ -1,116 +1,189 @@
-import { useEffect, useState } from 'react'
-import { Plus, HardDrive, ShieldCheck, CloudOff, Info } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { Plus, Search, ChevronRight, HardDrive, CloudOff, ShieldCheck, ClipboardList, X } from 'lucide-react'
+import { ICONE_BIEN } from '../components/icones'
+import { db, demanderStockagePersistant } from '../db/base'
+import { adresseCourte, creerEdl, nomsLocataires, progressionGlobale } from '../db/edl'
+import type { Edl, Statut, TypeActe, TypeBien } from '../db/types'
+import { LIBELLE_ACTE, LIBELLE_BIEN, LIBELLE_STATUT, formatDate } from '../libelles'
+import { Badge, BarreProgression } from '../components/ui'
 
-/** Formate un nombre d'octets en Mo / Go lisibles. */
-function taille(octets?: number): string {
-  if (octets === undefined) return '—'
-  if (octets > 1e9) return `${(octets / 1e9).toFixed(1).replace('.', ',')} Go`
-  return `${Math.round(octets / 1e6)} Mo`
-}
+type Filtre<T> = T | 'tous'
 
-type Diagnostic = {
-  utilise?: number
-  disponible?: number
-  persistant?: boolean
-  horsLigne: boolean
-}
-
-/**
- * Accueil — version « étape 0 ».
- * Pour l'instant, il vérifie que la tablette offre tout ce dont l'application a besoin.
- * La liste des états des lieux arrivera à l'étape 1.
- */
 export default function Accueil() {
-  const [diag, setDiag] = useState<Diagnostic>({ horsLigne: false })
+  const navigate = useNavigate()
+  const edls = useLiveQuery(() => db.edls.orderBy('modifieLe').reverse().toArray(), [])
+  const [recherche, setRecherche] = useState('')
+  const [statut, setStatut] = useState<Filtre<Statut>>('tous')
+  const [acte, setActe] = useState<Filtre<TypeActe>>('tous')
+  const [bien, setBien] = useState<Filtre<TypeBien>>('tous')
+  const [creation, setCreation] = useState(false)
 
-  useEffect(() => {
-    ;(async () => {
-      const estimation = await navigator.storage?.estimate?.()
-      const persistant = await navigator.storage?.persisted?.()
-      setDiag({
-        utilise: estimation?.usage,
-        disponible: estimation?.quota,
-        persistant,
-        horsLigne: 'serviceWorker' in navigator && !!navigator.serviceWorker.controller,
-      })
-    })()
-  }, [])
+  const filtres = useMemo(() => {
+    const q = recherche.trim().toLowerCase()
+    return (edls ?? []).filter((e) => {
+      if (statut !== 'tous' && e.statut !== statut) return false
+      if (acte !== 'tous' && e.typeActe !== acte) return false
+      if (bien !== 'tous' && e.typeBien !== bien) return false
+      if (!q) return true
+      const texte = [e.reference, adresseCourte(e), nomsLocataires(e), e.bien.lot].join(' ').toLowerCase()
+      return texte.includes(q)
+    })
+  }, [edls, recherche, statut, acte, bien])
+
+  async function nouveau() {
+    if (creation) return
+    setCreation(true)
+    await demanderStockagePersistant()
+    const id = await creerEdl()
+    navigate(`/edl/${id}/infos`)
+  }
+
+  const total = edls?.length ?? 0
+  const enCours = edls?.filter((e) => e.statut !== 'signe').length ?? 0
 
   return (
     <>
-      <section className="carte" style={{ padding: '32px 32px 28px' }}>
-        <p style={{ margin: 0, color: 'var(--bronze)', fontWeight: 700, letterSpacing: '0.12em', fontSize: 14 }}>
-          GROUPE BRENGUIER
-        </p>
-        <h1 style={{ fontSize: 34, marginTop: 6 }}>États des lieux</h1>
-        <hr className="filet" />
-        <p style={{ margin: '0 0 24px', color: 'var(--texte-doux)', maxWidth: 640 }}>
-          Entrée, sortie, appartements, maisons, locaux et entrepôts. Photos, signatures et rapport PDF, directement sur
-          la tablette, même sans connexion.
-        </p>
-        <button className="bouton bouton-principal" disabled style={{ opacity: 0.55 }}>
-          <Plus size={22} /> Nouvel état des lieux
+      <section className="carte accueil-hero">
+        <div>
+          <p className="surtitre">GROUPE BRENGUIER</p>
+          <h1>États des lieux</h1>
+          <hr className="filet" />
+          <p className="texte-doux">
+            {total === 0
+              ? 'Aucun état des lieux pour le moment. Commencez par en créer un.'
+              : `${total} état${total > 1 ? 's' : ''} des lieux · ${enCours} à terminer`}
+          </p>
+        </div>
+        <button className="bouton bouton-principal bouton-xl" onClick={nouveau} disabled={creation}>
+          <Plus size={24} /> Nouvel état des lieux
         </button>
-        <p style={{ margin: '12px 0 0', fontSize: 15, color: 'var(--texte-doux)' }}>
-          <Info size={15} style={{ verticalAlign: '-2px' }} /> Disponible à l'étape 1 du développement.
-        </p>
       </section>
 
-      <h2 style={{ fontSize: 22, margin: '36px 0 14px' }}>Vérification de la tablette</h2>
-      <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
-        <Indicateur
-          icone={<HardDrive />}
-          titre="Espace de stockage"
-          valeur={`${taille(diag.utilise)} utilisés`}
-          detail={`sur ${taille(diag.disponible)} autorisés`}
-          ok={!!diag.disponible}
-        />
-        <Indicateur
-          icone={<CloudOff />}
-          titre="Fonctionnement hors ligne"
-          valeur={diag.horsLigne ? 'Activé' : 'Pas encore activé'}
-          detail={diag.horsLigne ? 'Utilisable sans réseau' : 'Actif une fois l’application en ligne et installée'}
-          ok={diag.horsLigne}
-        />
-        <Indicateur
-          icone={<ShieldCheck />}
-          titre="Protection des données"
-          valeur={diag.persistant ? 'Stockage protégé' : 'Non protégé'}
-          detail="Sera demandée à Android à l’étape 1"
-          ok={!!diag.persistant}
-        />
-      </div>
+      {total > 0 && (
+        <>
+          <div className="barre-recherche">
+            <Search size={20} />
+            <input
+              type="search"
+              placeholder="Rechercher une adresse, un locataire, une référence…"
+              value={recherche}
+              onChange={(e) => setRecherche(e.target.value)}
+            />
+            {recherche && (
+              <button onClick={() => setRecherche('')} aria-label="Effacer la recherche">
+                <X size={20} />
+              </button>
+            )}
+          </div>
 
-      <p style={{ marginTop: 40, fontSize: 14, color: 'var(--texte-doux)', textAlign: 'center' }}>
-        EDL Brenguier · version {__APP_VERSION__}
-      </p>
+          <div className="filtres">
+            <GroupeFiltre
+              valeur={statut}
+              onChange={setStatut}
+              options={[['tous', 'Tous'], ['brouillon', 'Brouillons'], ['en_cours', 'En cours'], ['signe', 'Signés']]}
+            />
+            <GroupeFiltre valeur={acte} onChange={setActe} options={[['tous', 'Entrée et sortie'], ['entree', 'Entrées'], ['sortie', 'Sorties']]} />
+            <GroupeFiltre
+              valeur={bien}
+              onChange={setBien}
+              options={[['tous', 'Tous biens'], ['appartement', 'Appartements'], ['maison', 'Maisons'], ['local', 'Locaux']]}
+            />
+          </div>
+
+          <div className="liste-edl">
+            {filtres.map((e) => (
+              <CarteEdl key={e.id} edl={e} onOuvrir={() => navigate(`/edl/${e.id}`)} />
+            ))}
+            {filtres.length === 0 && (
+              <div className="vide">
+                <ClipboardList size={36} />
+                <p>Aucun état des lieux ne correspond à ces critères.</p>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      <EtatTablette />
     </>
   )
 }
 
-function Indicateur(props: { icone: React.ReactNode; titre: string; valeur: string; detail: string; ok: boolean }) {
-  const couleur = props.ok ? 'var(--etat-neuf)' : 'var(--etat-use)'
+function GroupeFiltre<T extends string>(props: { valeur: T; onChange: (v: T) => void; options: [T, string][] }) {
   return (
-    <div className="carte" style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-      <div
-        style={{
-          width: 48,
-          height: 48,
-          borderRadius: 12,
-          display: 'grid',
-          placeItems: 'center',
-          background: 'var(--bronze-clair)',
-          color: 'var(--encre)',
-          flexShrink: 0,
-        }}
-      >
-        {props.icone}
+    <div className="segment">
+      {props.options.map(([v, l]) => (
+        <button key={v} className={props.valeur === v ? 'segment-actif' : ''} onClick={() => props.onChange(v)}>
+          {l}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function CarteEdl({ edl, onOuvrir }: { edl: Edl; onOuvrir: () => void }) {
+  const Icone = ICONE_BIEN[edl.typeBien]
+  const pct = progressionGlobale(edl)
+  const tonStatut = edl.statut === 'signe' ? 'vert' : edl.statut === 'en_cours' ? 'orange' : 'gris'
+  return (
+    <button className={`carte carte-edl acte-${edl.typeActe}`} onClick={onOuvrir}>
+      <div className="carte-edl-icone">
+        <Icone size={26} />
       </div>
-      <div>
-        <div style={{ fontSize: 15, color: 'var(--texte-doux)' }}>{props.titre}</div>
-        <div style={{ fontWeight: 700, color: couleur }}>{props.valeur}</div>
-        <div style={{ fontSize: 14, color: 'var(--texte-doux)' }}>{props.detail}</div>
+      <div className="carte-edl-corps">
+        <div className="carte-edl-haut">
+          <span className="reference">{edl.reference}</span>
+          <Badge ton={edl.typeActe === 'sortie' ? 'bronze' : 'encre'}>{LIBELLE_ACTE[edl.typeActe]}</Badge>
+          <Badge ton={tonStatut}>{LIBELLE_STATUT[edl.statut]}</Badge>
+        </div>
+        <div className="carte-edl-adresse">{adresseCourte(edl)}</div>
+        <div className="carte-edl-detail">
+          {nomsLocataires(edl)} · {LIBELLE_BIEN[edl.typeBien]} · {formatDate(edl.dateVisite)}
+        </div>
+        <div className="carte-edl-progression">
+          <BarreProgression pourcent={pct} fine />
+          <span>{pct} %</span>
+        </div>
       </div>
+      <ChevronRight className="carte-edl-chevron" />
+    </button>
+  )
+}
+
+/** Bandeau discret en bas de l'accueil : espace utilisé, hors ligne, protection. */
+function EtatTablette() {
+  const [infos, setInfos] = useState<{ utilise?: number; quota?: number; persistant?: boolean; horsLigne?: boolean }>({})
+  const nbEdl = useLiveQuery(() => db.edls.count(), [])
+
+  useEffect(() => {
+    let actif = true
+    ;(async () => {
+      const est = await navigator.storage?.estimate?.()
+      const persistant = await navigator.storage?.persisted?.()
+      const reg = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : undefined
+      if (actif) setInfos({ utilise: est?.usage, quota: est?.quota, persistant, horsLigne: !!reg?.active })
+    })()
+    return () => {
+      actif = false
+    }
+  }, [nbEdl])
+
+  const mo = (o?: number) => (o === undefined ? '—' : o > 1e9 ? `${(o / 1e9).toFixed(1).replace('.', ',')} Go` : `${Math.max(1, Math.round(o / 1e6))} Mo`)
+
+  return (
+    <div className="etat-tablette">
+      <span>
+        <HardDrive size={16} /> {mo(infos.utilise)} utilisés sur {mo(infos.quota)}
+      </span>
+      <span className={infos.horsLigne ? 'ok' : 'attention'}>
+        <CloudOff size={16} /> {infos.horsLigne ? 'Fonctionne hors ligne' : 'Hors ligne pas encore actif'}
+      </span>
+      <span className={infos.persistant ? 'ok' : 'attention'}>
+        <ShieldCheck size={16} /> {infos.persistant ? 'Données protégées' : 'Protection demandée à la 1re création'}
+      </span>
+      <span className="version">v{__APP_VERSION__}</span>
     </div>
   )
 }
