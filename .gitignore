@@ -1,0 +1,25 @@
+# ------------------------------------------------------------------
+# EDL Brenguier — fichiers à NE JAMAIS mettre en ligne
+# ------------------------------------------------------------------
+
+# Documents réels (états des lieux, constats) : contiennent des données
+# personnelles (noms, adresses). Ils restent uniquement sur ce Mac.
+*.pdf
+*.PDF
+exemples/
+sauvegardes/
+*.edl.zip
+
+# Dépendances et fichiers générés
+node_modules
+dist
+dist-ssr
+dev-dist
+*.local
+*.log
+
+# Fichiers système / éditeurs
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea

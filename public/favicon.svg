@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#1C2B3A"/>
+  <!-- maison -->
+  <path d="M128 252 L256 140 L384 252" fill="none" stroke="#A8763E" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M164 232 V376 H348 V232" fill="none" stroke="#F6F3EE" stroke-width="24" stroke-linejoin="round"/>
+  <!-- coche -->
+  <path d="M208 304 L246 340 L314 268" fill="none" stroke="#A8763E" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
