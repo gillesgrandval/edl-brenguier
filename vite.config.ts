@@ -40,8 +40,8 @@ export default defineConfig({
       },
       workbox: {
         // Tout ce qui compose l'application est mis en cache pour fonctionner sans réseau
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2,ttf}'],
-        maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2,ttf,gz}'],
+        maximumFileSizeToCacheInBytes: 8 * 1024 * 1024, // le moteur de lecture d'index pèse ~4 Mo par fichier
         navigateFallback: `${BASE}index.html`,
       },
       devOptions: { enabled: false },

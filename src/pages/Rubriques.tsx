@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { AlarmSmoke, ArrowLeft, Camera, Check, CircleAlert, Gauge, KeyRound, MessageSquareText, Plus, Trash2, Wrench } from 'lucide-react'
+import { AlarmSmoke, ArrowLeft, Camera, Check, CircleAlert, Gauge, KeyRound, MessageSquareText, Plus, ScanLine, Trash2, Wrench } from 'lucide-react'
 import { useEdl } from '../hooks/useEdl'
 import { nouvelId } from '../db/base'
 import { compteurFait } from '../db/edl'
@@ -10,6 +10,7 @@ import { Champ, Compteur, Interrupteur, Tuiles } from '../components/ui'
 import { BoutonsPhoto, GaleriePhotos } from '../components/Photos'
 import { BoutonDictee } from '../components/Dictee'
 import Chargement from '../components/Chargement'
+import LecteurIndex from '../components/LecteurIndex'
 
 /* Rubriques transversales : compteurs, clés, détecteur de fumée, observations générales. */
 
@@ -100,6 +101,7 @@ const UNITE: Record<TypeCompteur, string> = { electricite: 'kWh', gaz: 'm³', ea
 
 export function Compteurs() {
   const r = useRubrique()
+  const [lecteur, setLecteur] = useState<{ photoId: string; compteurId: string } | null>(null)
   if (r.edl === undefined) return <Chargement />
   if (!r.edl) return <Chargement introuvable />
   const edl = r.edl
@@ -153,7 +155,23 @@ export function Compteurs() {
                 <div className="bloc-titre">
                   <Camera size={16} /> Photo de l'index
                 </div>
-                <BoutonsPhoto enCours={r.traitement} onFichiers={(f) => r.photos(f, 'Compteurs', c.libelle, (pid) => maj(c.id, (x) => void x.photoIds.push(pid)))} />
+                <BoutonsPhoto
+                  enCours={r.traitement}
+                  onFichiers={async (f) => {
+                    let derniere: string | undefined
+                    await r.photos(f, 'Compteurs', c.libelle, (pid) => {
+                      derniere = pid
+                      maj(c.id, (x) => void x.photoIds.push(pid))
+                    })
+                    // Lecture automatique de l'index dès la photo prise.
+                    if (derniere) setLecteur({ photoId: derniere, compteurId: c.id })
+                  }}
+                />
+                {c.photoIds.length > 0 && (
+                  <button className="bouton bouton-discret bouton-lire" onClick={() => setLecteur({ photoId: c.photoIds[c.photoIds.length - 1], compteurId: c.id })}>
+                    <ScanLine size={20} /> Lire l'index sur la photo
+                  </button>
+                )}
                 <GaleriePhotos
                   ids={c.photoIds}
                   onSupprimer={async (pid) => {
@@ -180,6 +198,18 @@ export function Compteurs() {
           )}
         </section>
       ))}
+
+      {lecteur && (
+        <LecteurIndex
+          photoId={lecteur.photoId}
+          compteur={liste.find((c) => c.id === lecteur.compteurId)!}
+          onFermer={() => setLecteur(null)}
+          onValider={(champ, valeur) => {
+            maj(lecteur.compteurId, (x) => void (x[champ] = valeur))
+            setLecteur(null)
+          }}
+        />
+      )}
 
       <button
         className="bouton bouton-discret bouton-ajout"

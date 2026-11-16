@@ -611,3 +611,42 @@ textarea.saisie { resize: vertical; }
   .annotateur-actions { margin-left: 0; }
   .ligne-cle { grid-template-columns: 1fr auto; }
 }
+
+/* ==================================================================
+   Mémo vocal de pièce et lecture d'index
+   ================================================================== */
+.actions-rapides { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.actions-rapides .bouton { width: 100%; margin: 0; }
+.actions-rapides .bouton-dicter:only-child { grid-column: 1 / -1; }
+.bouton-dicter { min-height: 60px; font-size: 19px; }
+
+.memo { width: min(860px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); }
+.memo-entete { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.memo-entete h2 { font-size: 22px; margin: 0; }
+.memo em { color: var(--encre); }
+.memo-micro { width: 100%; margin: 6px 0 10px; background: var(--bronze); color: #fff; }
+.memo-micro-actif { background: var(--etat-hs); animation: pulse 1.2s ease infinite; }
+.memo-provisoire { margin: 0 0 10px; color: var(--texte-doux); font-style: italic; min-height: 1.4em; }
+.memo-texte { min-height: 170px; font-size: 18px; line-height: 1.5; }
+.memo-propositions { display: grid; gap: 10px; margin-top: 8px; }
+.memo-prop { display: flex; gap: 14px; align-items: flex-start; text-align: left; padding: 14px 16px; border-radius: 14px; border: 1.5px solid var(--encre); background: #fff; color: var(--texte); width: 100%; }
+.memo-prop-off { border-color: var(--trait); opacity: .55; }
+.case { width: 30px; height: 30px; border-radius: 8px; border: 2px solid var(--trait); display: grid; place-items: center; flex-shrink: 0; }
+.case-on { background: var(--etat-neuf); border-color: var(--etat-neuf); color: #fff; }
+.memo-prop-corps { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.memo-prop-titre { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.memo-prop-detail { color: var(--encre); font-size: 15px; }
+.memo-prop-extrait { color: var(--texte-doux); font-size: 14px; font-style: italic; }
+.memo-commentaire { padding: 12px 16px; border-radius: 12px; background: #ebe6de; font-size: 15px; }
+
+.lecteur-image { position: relative; touch-action: none; user-select: none; margin: 8px 0; border-radius: 12px; overflow: hidden; background: #0d141b; }
+.lecteur-image img { display: block; width: 100%; max-height: 52dvh; object-fit: contain; }
+.lecteur-cadre { position: absolute; border: 3px solid var(--bronze); box-shadow: 0 0 0 9999px rgba(0,0,0,.45); border-radius: 6px; pointer-events: none; }
+.lecteur-resultat { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-top: 12px; }
+.lecteur-resultat .champ { flex: 1; min-width: 200px; }
+.lecteur-resultat .saisie { font-size: 26px; letter-spacing: .08em; font-weight: 700; }
+.bouton-lire { margin-top: 10px; }
+
+@media (max-width: 600px) {
+  .actions-rapides { grid-template-columns: 1fr; }
+}

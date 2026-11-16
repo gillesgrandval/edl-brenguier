@@ -19,6 +19,7 @@ export const OBSERVATIONS = [
   'Rayures',
   'Taches',
   'Trous',
+  'Vis / chevilles restantes',
   'Fissures',
   'Éclats',
   'Impacts',
@@ -34,6 +35,7 @@ export const OBSERVATIONS = [
   'Cassé',
   'Déformé',
   'Manquant',
+  'Arraché',
   'Ne ferme pas',
   'Sale',
 ]

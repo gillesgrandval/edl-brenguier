@@ -9,6 +9,7 @@ import {
   ChevronDown,
   Copy,
   MessageSquareText,
+  Mic,
   Pencil,
   Plus,
   Sparkles,
@@ -26,6 +27,8 @@ import { BarreProgression, Champ, Compteur, Confirmation, Interrupteur, Puces } 
 import { BoutonsPhoto, GaleriePhotos } from '../components/Photos'
 import { BoutonDictee } from '../components/Dictee'
 import Chargement from '../components/Chargement'
+import MemoPiece from '../components/MemoPiece'
+import { appliquerAnalyse } from '../analyse/memo'
 
 /**
  * Saisie d'une pièce, élément par élément.
@@ -41,6 +44,7 @@ export default function Piece() {
   const [renommer, setRenommer] = useState(false)
   const [confirmerSuppression, setConfirmerSuppression] = useState(false)
   const [ajout, setAjout] = useState(false)
+  const [memo, setMemo] = useState(false)
   const refs = useRef<Record<string, HTMLDivElement | null>>({})
 
   const piece = edl?.pieces.find((p) => p.id === pieceId)
@@ -178,10 +182,29 @@ export default function Piece() {
         </div>
       </div>
 
-      {!verrouille && pr.faits < pr.total && (
-        <button className="bouton bouton-discret bouton-tout-bon" onClick={toutEnBonEtat}>
-          <CheckCheck size={20} /> Tout le reste en bon état ({pr.total - pr.faits})
-        </button>
+      {!verrouille && (
+        <div className="actions-rapides">
+          <button className="bouton bouton-accent bouton-dicter" onClick={() => setMemo(true)}>
+            <Mic size={22} /> Dicter la pièce
+          </button>
+          {pr.faits < pr.total && (
+            <button className="bouton bouton-discret bouton-tout-bon" onClick={toutEnBonEtat}>
+              <CheckCheck size={20} /> Tout le reste en bon état ({pr.total - pr.faits})
+            </button>
+          )}
+        </div>
+      )}
+
+      {memo && (
+        <MemoPiece
+          piece={piece}
+          onFermer={() => setMemo(false)}
+          onAppliquer={(a, retenues, general) => {
+            majPiece((p) => appliquerAnalyse(p, a, retenues, general))
+            setMemo(false)
+            setOuvert(null)
+          }}
+        />
       )}
 
       {/* --- Éléments --- */}
