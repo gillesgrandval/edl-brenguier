@@ -105,3 +105,14 @@ export function adresseCourte(edl: Edl): string {
   const { adresse, codePostal, ville } = edl.bien
   return [adresse, [codePostal, ville].filter(Boolean).join(' ')].filter(Boolean).join(', ') || 'Adresse non renseignée'
 }
+
+/** Modifie directement un état des lieux enregistré (utilisé hors des écrans de saisie). */
+export async function majEdl(id: string, recette: (e: Edl) => void): Promise<void> {
+  await db.transaction('rw', db.edls, async () => {
+    const e = await db.edls.get(id)
+    if (!e) return
+    recette(e)
+    e.modifieLe = new Date().toISOString()
+    await db.edls.put(e)
+  })
+}

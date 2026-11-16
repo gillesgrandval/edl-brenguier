@@ -22,6 +22,7 @@ import { LIBELLE_ACTE, LIBELLE_BIEN, formatDate } from '../libelles'
 import { Badge, BarreProgression, Confirmation, Section } from '../components/ui'
 import Chargement from '../components/Chargement'
 import { ICONE_BIEN } from '../components/icones'
+import BlocPieces from '../components/BlocPieces'
 
 /** Vue d'ensemble d'un état des lieux : on y voit d'un coup d'œil ce qui reste à faire. */
 export default function TableauDeBord() {
@@ -96,30 +97,7 @@ export default function TableauDeBord() {
         </button>
       </Section>
 
-      <Section titre={`Pièces (${edl.pieces.length})`}>
-        <div className="grille-pieces">
-          {edl.pieces.map((p) => {
-            const pr = progressionPiece(p)
-            const finie = pr.total > 0 && pr.faits === pr.total
-            return (
-              <button key={p.id} className={`carte tuile-piece ${finie ? 'tuile-piece-finie' : ''}`} onClick={() => navigate(`/edl/${edl.id}/piece/${p.id}`)}>
-                <div className="tuile-piece-haut">
-                  <span className="tuile-piece-nom">{p.nom}</span>
-                  {finie && (
-                    <span className="pastille-ok">
-                      <Check size={16} strokeWidth={3} />
-                    </span>
-                  )}
-                </div>
-                <BarreProgression pourcent={pr.total ? (pr.faits / pr.total) * 100 : 0} fine />
-                <span className="tuile-piece-detail">
-                  {pr.faits} / {pr.total} éléments
-                </span>
-              </button>
-            )
-          })}
-        </div>
-      </Section>
+      <BlocPieces edl={edl} />
 
       <Section titre="Rubriques">
         <div className="grille-pieces">

@@ -442,3 +442,125 @@ textarea.saisie { resize: vertical; }
   .assistant-pied .bouton { min-width: 0; flex: 1; }
   .tdb-pourcent { font-size: 40px; }
 }
+
+/* ==================================================================
+   ÉTAPE 2 — saisie des pièces et photos
+   ================================================================== */
+.bouton-actif { background: var(--encre); color: #fff; border-color: var(--encre); }
+
+.piece-entete {
+  position: sticky; top: 0; z-index: 15; margin: -28px -24px 16px; padding: 14px 24px;
+  background: rgba(246, 243, 238, 0.96); backdrop-filter: blur(8px); border-bottom: 1px solid var(--trait);
+  display: flex; align-items: center; gap: 16px;
+}
+.piece-entete-titre { flex: 1; min-width: 0; }
+.titre-modifiable { border: 0; background: none; padding: 0; display: inline-flex; align-items: center; gap: 10px; color: var(--encre); text-align: left; }
+.titre-modifiable h1 { font-size: 26px; }
+.titre-modifiable svg { color: var(--texte-doux); flex-shrink: 0; }
+.saisie-titre { font-family: var(--police-titre); font-size: 22px; min-height: 48px; padding: 6px 12px; }
+.piece-entete-progression { display: flex; align-items: center; gap: 12px; margin-top: 8px; font-size: 14px; font-weight: 700; color: var(--texte-doux); }
+.piece-entete-progression .barre { flex: 1; max-width: 360px; }
+.piece-entete-progression .indicateur-sauvegarde { margin-left: auto; font-weight: 400; }
+
+.bouton-tout-bon { width: 100%; margin-bottom: 14px; color: var(--etat-neuf); border-color: #b9dcc7; background: #f3faf6; }
+
+.liste-elements { display: grid; gap: 10px; }
+.ancre-element { scroll-margin-top: 110px; }
+.carte-element { background: var(--surface); border: 1.5px solid var(--trait); border-radius: var(--rayon); overflow: hidden; transition: border-color .15s, box-shadow .15s; }
+.carte-element-ouverte { border-color: var(--encre); box-shadow: 0 8px 28px rgba(28,43,58,.12); }
+.carte-element-entete {
+  width: 100%; min-height: 64px; border: 0; background: none; display: flex; align-items: center; gap: 14px;
+  padding: 10px 16px; text-align: left; color: var(--texte);
+}
+.pastille-etat {
+  width: 42px; height: 42px; border-radius: 12px; border: 2px dashed var(--trait); flex-shrink: 0;
+  display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 14px; letter-spacing: .03em;
+}
+.carte-element-faite .pastille-etat { border-style: solid; }
+.carte-element-titre { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.carte-element-resume { font-size: 14px; color: var(--texte-doux); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.compte-photos { display: inline-flex; align-items: center; gap: 4px; font-size: 14px; color: var(--bronze); font-weight: 700; }
+.chevron { color: var(--texte-doux); transition: transform .2s; flex-shrink: 0; }
+.carte-element-ouverte .chevron { transform: rotate(180deg); }
+
+.carte-element-corps { border: 0; margin: 0; padding: 4px 16px 16px; min-width: 0; border-top: 1px solid var(--trait); }
+.bloc { margin-top: 18px; }
+.bloc-titre { display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--texte-doux); font-size: 15px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: .05em; }
+.bloc-sous-titre { font-weight: 700; color: var(--texte-doux); font-size: 14px; margin-bottom: 8px; }
+.bloc-ligne { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.boutons-etat { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+.bouton-etat {
+  min-height: 78px; border-radius: 12px; border: 2px solid var(--couleur); background: #fff; color: var(--encre);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 6px 4px;
+  transition: transform .08s, background .15s;
+}
+.bouton-etat:active { transform: scale(0.95); }
+.bouton-etat-code { width: 34px; height: 34px; border-radius: 50%; background: var(--couleur); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 13px; }
+.bouton-etat-libelle { font-size: 13px; line-height: 1.15; text-align: center; }
+.bouton-etat-actif { background: var(--couleur); color: #fff; box-shadow: 0 4px 14px rgba(0,0,0,.18); }
+.bouton-etat-actif .bouton-etat-code { background: rgba(255,255,255,.25); }
+
+.segment-large { display: flex; width: 100%; }
+.segment-large button { flex: 1; min-height: 52px; }
+.segment .fonct-ok { background: var(--etat-neuf); color: #fff; }
+.segment .fonct-defaillant { background: var(--etat-hs); color: #fff; }
+
+.ligne-compteur { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 4px 4px 18px; border: 1.5px solid var(--trait); border-radius: 12px; }
+
+.carte-element-pied { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 22px; flex-wrap: wrap; }
+.carte-element-pied .bouton-principal { margin-left: auto; }
+.confirmation-ligne { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; color: var(--etat-hs); font-weight: 700; }
+
+.bouton-ajout { width: 100%; margin-top: 12px; border-style: dashed; }
+
+.piece-ensemble { margin-top: 24px; }
+.piece-ensemble h2 { font-size: 20px; display: flex; align-items: center; gap: 10px; }
+.piece-ensemble > p { margin: 6px 0 14px; }
+
+.fin-piece { margin-top: 24px; padding: 20px; border-radius: var(--rayon); background: #ebe6de; }
+.fin-piece p { margin: 0 0 14px; display: flex; align-items: center; gap: 10px; }
+.fin-piece-ok { background: #dcefe4; }
+.fin-piece-actions { display: flex; gap: 12px; justify-content: flex-end; flex-wrap: wrap; }
+.actions-piece { display: flex; justify-content: center; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
+
+/* Photos */
+.boutons-photo { display: flex; gap: 10px; }
+.boutons-photo .bouton-accent { min-width: 150px; }
+.tourne { animation: tourne 1s linear infinite; }
+@keyframes tourne { to { transform: rotate(360deg); } }
+.galerie { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; margin-top: 12px; }
+.miniature { position: relative; aspect-ratio: 1; border: 0; padding: 0; border-radius: 10px; overflow: hidden; background: #ebe6de; }
+.miniature img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.miniature-numero { position: absolute; top: 6px; left: 6px; min-width: 26px; height: 26px; padding: 0 6px; border-radius: 13px; background: var(--encre); color: #fff; font-size: 13px; font-weight: 700; display: grid; place-items: center; }
+
+.visionneuse { width: 100vw; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; background: #0d141b; color: #fff; }
+.visionneuse::backdrop { background: #0d141b; }
+.visionneuse-barre { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: calc(env(safe-area-inset-top) + 10px) 16px 10px; }
+.visionneuse-actions { display: flex; gap: 10px; align-items: center; }
+.visionneuse-image { height: calc(100dvh - 80px); display: grid; place-items: center; padding: 8px; }
+.visionneuse-image img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.bouton-icone-sombre { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.2); color: #fff; }
+
+/* Dictée */
+.dictee { margin-left: auto; display: inline-flex; align-items: center; gap: 10px; text-transform: none; letter-spacing: 0; }
+.dictee .bouton-icone { width: 44px; height: 44px; }
+.dictee-active { background: var(--etat-hs); color: #fff; border-color: var(--etat-hs); animation: pulse 1.2s ease infinite; }
+.dictee-erreur { font-weight: 400; font-size: 13px; color: #9a6400; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 8px rgba(179, 38, 30, .15); } }
+
+.dialogue-large { width: min(720px, calc(100vw - 32px)); }
+.dialogue h2 { display: flex; align-items: center; gap: 10px; }
+.fleches { display: flex; gap: 6px; }
+.fleches button { width: 44px; height: 44px; border-radius: 10px; border: 1.5px solid var(--trait); background: #fff; display: grid; place-items: center; color: var(--encre); }
+.fleches button:disabled { opacity: .3; }
+.tuile-piece[role='button'] { cursor: pointer; }
+
+@media (max-width: 900px) {
+  .boutons-etat { grid-template-columns: repeat(4, 1fr); }
+}
+@media (max-width: 600px) {
+  .piece-entete { margin: -20px -16px 16px; padding: 12px 16px; }
+  .boutons-etat { grid-template-columns: repeat(3, 1fr); }
+  .bloc-ligne { grid-template-columns: 1fr; }
+}
