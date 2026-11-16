@@ -163,7 +163,7 @@ export default function LecteurIndex(props: { photoId: string; compteur: ReleveC
           {lecture && lecture.autres.length > 0 && (
             <div className="puces" style={{ marginTop: 10 }}>
               <span className="texte-doux" style={{ alignSelf: 'center' }}>
-                Autres nombres vus :
+                Autres lectures possibles :
               </span>
               {lecture.autres.map((a) => (
                 <button key={a} className="puce" onClick={() => setValeur(a)}>

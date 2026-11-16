@@ -88,12 +88,15 @@ export function decoderSeptSegments(img: ImageBinaire): string | null {
   if (chiffres.length < 2) return null
   const lMax = Math.max(...chiffres.map((m) => m.l))
 
-  // 3. Lecture des segments de chaque chiffre.
+  // 3. Lecture des segments de chaque chiffre. L'unité (« kWh ») qui suit l'index
+  // n'est pas un chiffre : on garde la plus longue suite de chiffres reconnus.
   let resultat = ''
+  let suite = ''
   for (const c of chiffres) {
     // Un « 1 » est étroit : on le reconnaît à sa forme.
     if (c.l < lMax * 0.45) {
-      resultat += '1'
+      suite += '1'
+      if (suite.length > resultat.length) resultat = suite
       continue
     }
     const proportion = (xa: number, ya: number, xb: number, yb: number) => {
@@ -126,8 +129,12 @@ export function decoderSeptSegments(img: ImageBinaire): string | null {
       .sort()
       .join('')
     const chiffre = MOTIFS[motif]
-    if (!chiffre) return null // un chiffre illisible : on préfère ne rien proposer
-    resultat += chiffre
+    if (!chiffre) {
+      suite = ''
+      continue
+    }
+    suite += chiffre
+    if (suite.length > resultat.length) resultat = suite
   }
   return resultat.length >= 3 ? resultat : null
 }
