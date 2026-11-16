@@ -30,8 +30,10 @@ export default function LecteurIndex(props: { photoId: string; compteur: ReleveC
     try {
       const l = await lireIndex(image.current, c)
       setLecture(l)
-      setValeur(l.index)
-      if (!l.index) setErreur(c ? 'Aucun chiffre lu dans le cadre. Resserrez le cadre sur les chiffres.' : 'Lecture automatique impossible : tracez un cadre autour des chiffres.')
+      // Une lecture incertaine n'est jamais pré-remplie : elle est seulement suggérée.
+      setValeur(l.sure ? l.index : '')
+      if (!l.index) setErreur(c ? 'Aucun chiffre lu dans le cadre. Resserrez le cadre sur les chiffres de l’index.' : 'Index non trouvé automatiquement : tracez un cadre autour des chiffres de l’index.')
+      else if (!l.sure) setErreur(c ? 'Lecture incertaine : vérifiez le chiffre suggéré ou resserrez le cadre.' : 'Lecture incertaine : vérifiez la zone encadrée en pointillés. Si ce n’est pas l’index, tracez un cadre autour des bons chiffres.')
     } catch (e) {
       setErreur('Le moteur de lecture n’a pas pu démarrer : ' + (e as Error).message)
     } finally {
@@ -116,6 +118,14 @@ export default function LecteurIndex(props: { photoId: string; compteur: ReleveC
 
       <div ref={zone} className="lecteur-image" onPointerDown={appui} onPointerMove={glisse} onPointerUp={relache} onPointerCancel={relache}>
         {url && <img src={url} alt="Photo du compteur" draggable={false} onLoad={() => window.dispatchEvent(new Event('resize'))} />}
+        {!cadre && lecture?.zone && boite && (
+          <div
+            className="lecteur-cadre lecteur-zone-lue"
+            style={{ left: boite.left + lecture.zone.x * boite.width, top: boite.top + lecture.zone.y * boite.height, width: lecture.zone.l * boite.width, height: lecture.zone.h * boite.height }}
+          >
+            <span>Zone lue</span>
+          </div>
+        )}
         {cadre && boite && (
           <div
             className="lecteur-cadre"
@@ -134,12 +144,22 @@ export default function LecteurIndex(props: { photoId: string; compteur: ReleveC
           <div className="lecteur-resultat">
             <label className="champ">
               <span className="champ-label">
-                Index lu {lecture?.index ? `(fiabilité ${lecture.confiance} %)` : ''} — vérifiez et corrigez si besoin
+                Index {lecture?.sure ? `lu (fiabilité ${lecture.confiance} %)` : 'à saisir'} — vérifiez et corrigez si besoin
               </span>
               <input className="saisie" inputMode="numeric" value={valeur} onChange={(e) => setValeur(e.target.value.replace(/[^\d.,]/g, ''))} placeholder="—" />
             </label>
             {lecture?.apercu && <img src={lecture.apercu} alt="Image analysée" style={{ height: 64, maxWidth: 260, objectFit: 'contain', border: '1px solid var(--trait)', borderRadius: 8 }} />}
           </div>
+          {lecture && !lecture.sure && lecture.index && (
+            <div className="puces" style={{ marginTop: 10 }}>
+              <span className="texte-doux" style={{ alignSelf: 'center' }}>
+                Lecture suggérée :
+              </span>
+              <button className="puce" onClick={() => setValeur(lecture.index)}>
+                {lecture.index} ?
+              </button>
+            </div>
+          )}
           {lecture && lecture.autres.length > 0 && (
             <div className="puces" style={{ marginTop: 10 }}>
               <span className="texte-doux" style={{ alignSelf: 'center' }}>

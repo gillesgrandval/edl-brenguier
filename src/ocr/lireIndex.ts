@@ -28,6 +28,10 @@ export interface Lecture {
   /** Autres suites de chiffres trouvées (n° de série, etc.). */
   autres: string[]
   apercu?: string
+  /** Zone de la photo où l'index a été lu (affichée à l'écran). */
+  zone?: Cadre
+  /** true si la lecture est assez sûre pour être proposée d'office. */
+  sure: boolean
 }
 
 let promesseWorker: Promise<Worker> | null = null
@@ -133,6 +137,8 @@ export async function lireIndex(image: Blob, cadre: Cadre | null): Promise<Lectu
       confiance: Math.round(trouves[0]?.confiance ?? 0),
       autres: trouves.slice(1, 4).map((t) => t.chiffres),
       apercu: canevas.toDataURL('image/png'),
+      zone: cadre ?? undefined,
+      sure: false,
     }
     // Afficheur numérique : le décodeur 7 segments est plus sûr que Tesseract quand il lit tous les chiffres.
     // Sans cadre tracé, on recadre automatiquement sur le plus gros nombre trouvé.
@@ -149,6 +155,7 @@ export async function lireIndex(image: Blob, cadre: Cadre | null): Promise<Lectu
         l: Math.min(1, (b.x1 - b.x0 + 2 * mx) / canevas.width) * SANS_BANDEAU.l,
         h: Math.min(1, (b.y1 - b.y0 + 2 * my) / canevas.height) * SANS_BANDEAU.h,
       }
+      lecture.zone = auto
       const zoom = await preparer(image, auto, inverser, false)
       segments = decoderSeptSegments(zoom.getContext('2d', { willReadFrequently: true })!.getImageData(0, 0, zoom.width, zoom.height))
       zoom.width = zoom.height = 0
@@ -162,6 +169,8 @@ export async function lireIndex(image: Blob, cadre: Cadre | null): Promise<Lectu
         lecture.autres.unshift(segments)
       }
     }
+    // Sûre : décodée en 7 segments, ou lue par Tesseract avec une bonne fiabilité et une longueur plausible (4 à 9 chiffres).
+    lecture.sure = !!lecture.index && (lecture.confiance >= 90 || (lecture.confiance >= 65 && lecture.index.length >= 4 && lecture.index.length <= 9))
     canevas.width = canevas.height = 0
     if (!meilleure || score(lecture) > score(meilleure)) meilleure = lecture
     if (lecture.index && lecture.confiance >= 80) break
