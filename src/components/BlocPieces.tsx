@@ -23,7 +23,7 @@ export default function BlocPieces({ edl }: { edl: Edl }) {
 
   return (
     <Section
-      titre={`Pièces (${edl.pieces.length})`}
+      titre={`Pièces (${edl.pieces.filter((p) => p.modele !== 'mobilier').length})`}
       action={
         !verrouille && (
           <span style={{ display: 'flex', gap: 8 }}>
@@ -39,6 +39,7 @@ export default function BlocPieces({ edl }: { edl: Edl }) {
     >
       <div className="grille-pieces">
         {edl.pieces.map((p, i) => {
+          if (p.modele === 'mobilier') return null
           const pr = progressionPiece(p)
           const finie = pr.total > 0 && pr.faits === pr.total
           const photos = p.photoIds.length + p.elements.reduce((n, e) => n + e.photoIds.length, 0)

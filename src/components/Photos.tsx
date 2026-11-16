@@ -1,25 +1,23 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Camera, ImagePlus, Loader2, Trash2, X } from 'lucide-react'
+import { Camera, ImagePlus, Loader2, PenTool, Trash2, X } from 'lucide-react'
 import { db } from '../db/base'
 import { formatDate } from '../libelles'
+import Annotateur from './Annotateur'
 
-/** Adresse d'affichage d'une photo enregistrée (libérée automatiquement). */
+/** Adresse d'affichage d'une photo enregistrée ; suit les modifications (annotations). */
 function usePhotoUrl(id: string, version: 'miniature' | 'image') {
+  const blob = useLiveQuery(async () => {
+    const p = await db.photos.get(id)
+    return p ? (version === 'image' ? p.image : p.miniature) : undefined
+  }, [id, version])
   const [url, setUrl] = useState<string>()
   useEffect(() => {
-    let lien: string | undefined
-    let actif = true
-    db.photos.get(id).then((p) => {
-      if (!p || !actif) return
-      lien = URL.createObjectURL(version === 'image' ? p.image : p.miniature)
-      setUrl(lien)
-    })
-    return () => {
-      actif = false
-      if (lien) URL.revokeObjectURL(lien)
-    }
-  }, [id, version])
+    if (!blob) return
+    const lien = URL.createObjectURL(blob)
+    setUrl(lien)
+    return () => URL.revokeObjectURL(lien)
+  }, [blob])
   return url
 }
 
@@ -43,7 +41,7 @@ export function BoutonsPhoto(props: { onFichiers: (f: File[]) => void; enCours: 
         {props.enCours > 0 ? <Loader2 size={20} className="tourne" /> : <Camera size={22} />}
         {props.enCours > 0 ? `Traitement (${props.enCours})…` : 'Photo'}
       </button>
-      <button type="button" className="bouton bouton-discret" onClick={() => galerie.current?.click()} disabled={props.enCours > 0}>
+      <button type="button" className="bouton bouton-discret" onClick={() => galerie.current?.click()} disabled={props.enCours > 0} aria-label="Importer depuis la galerie">
         <ImagePlus size={20} /> {props.compact ? '' : 'Galerie'}
       </button>
     </div>
@@ -52,16 +50,24 @@ export function BoutonsPhoto(props: { onFichiers: (f: File[]) => void; enCours: 
 
 function Miniature({ id, onClick }: { id: string; onClick: () => void }) {
   const url = usePhotoUrl(id, 'miniature')
-  const numero = useLiveQuery(async () => (await db.photos.get(id))?.numero, [id])
+  const infos = useLiveQuery(async () => {
+    const p = await db.photos.get(id)
+    return p ? { numero: p.numero, annotee: !!p.annotations?.length } : undefined
+  }, [id])
   return (
     <button type="button" className="miniature" onClick={onClick}>
-      {url ? <img src={url} alt={`Photo ${numero ?? ''}`} /> : <span className="miniature-vide" />}
-      {numero && <span className="miniature-numero">{numero}</span>}
+      {url ? <img src={url} alt={`Photo ${infos?.numero ?? ''}`} /> : <span className="miniature-vide" />}
+      {infos && <span className="miniature-numero">{infos.numero}</span>}
+      {infos?.annotee && (
+        <span className="miniature-annotee">
+          <PenTool size={13} />
+        </span>
+      )}
     </button>
   )
 }
 
-export function GaleriePhotos(props: { ids: string[]; onSupprimer: (id: string) => void }) {
+export function GaleriePhotos(props: { ids: string[]; onSupprimer: (id: string) => void; lectureSeule?: boolean }) {
   const [ouverte, setOuverte] = useState<string | null>(null)
   if (props.ids.length === 0) return null
   return (
@@ -74,6 +80,7 @@ export function GaleriePhotos(props: { ids: string[]; onSupprimer: (id: string) 
       {ouverte && (
         <Visionneuse
           id={ouverte}
+          lectureSeule={props.lectureSeule}
           onFermer={() => setOuverte(null)}
           onSupprimer={() => {
             props.onSupprimer(ouverte)
@@ -85,10 +92,11 @@ export function GaleriePhotos(props: { ids: string[]; onSupprimer: (id: string) 
   )
 }
 
-function Visionneuse(props: { id: string; onFermer: () => void; onSupprimer: () => void }) {
+function Visionneuse(props: { id: string; lectureSeule?: boolean; onFermer: () => void; onSupprimer: () => void }) {
   const url = usePhotoUrl(props.id, 'image')
   const photo = useLiveQuery(() => db.photos.get(props.id), [props.id])
   const [confirmer, setConfirmer] = useState(false)
+  const [annoter, setAnnoter] = useState(false)
   const ref = useRef<HTMLDialogElement>(null)
   useEffect(() => {
     ref.current?.showModal()
@@ -110,9 +118,16 @@ function Visionneuse(props: { id: string; onFermer: () => void; onSupprimer: () 
           </span>
         ) : (
           <span className="visionneuse-actions">
-            <button className="bouton-icone bouton-icone-sombre" aria-label="Supprimer" onClick={() => setConfirmer(true)}>
-              <Trash2 />
-            </button>
+            {!props.lectureSeule && (
+              <>
+                <button className="bouton bouton-accent bouton-petit" onClick={() => setAnnoter(true)}>
+                  <PenTool size={18} /> Annoter
+                </button>
+                <button className="bouton-icone bouton-icone-sombre" aria-label="Supprimer" onClick={() => setConfirmer(true)}>
+                  <Trash2 />
+                </button>
+              </>
+            )}
             <button className="bouton-icone bouton-icone-sombre" aria-label="Fermer" onClick={props.onFermer}>
               <X />
             </button>
@@ -122,6 +137,7 @@ function Visionneuse(props: { id: string; onFermer: () => void; onSupprimer: () 
       <div className="visionneuse-image" onClick={props.onFermer}>
         {url && <img src={url} alt={photo?.legende} />}
       </div>
+      {annoter && <Annotateur photoId={props.id} onFermer={() => setAnnoter(false)} />}
     </dialog>
   )
 }

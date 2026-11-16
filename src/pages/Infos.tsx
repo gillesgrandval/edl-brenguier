@@ -24,7 +24,7 @@ import { db, nouvelId } from '../db/base'
 import { enregistrerEdl, infosManquantes } from '../db/edl'
 import type { Edl, Energie, ModeEnergie, TypeActe, TypeBien } from '../db/types'
 import { ANNEXES, ENERGIES } from '../libelles'
-import { creerPieces, modelesPour, quantitesParDefaut } from '../modeles/pieces'
+import { creerInventaire, creerPieces, modelesPour, quantitesParDefaut } from '../modeles/pieces'
 import { Champ, Compteur, Interrupteur, Puces, Section, Tuiles, ZoneTexte } from '../components/ui'
 import Chargement from '../components/Chargement'
 
@@ -61,7 +61,9 @@ export default function Infos() {
     await enregistrerMaintenant()
     if (creation) {
       // Enregistrement direct (et non différé) : les pièces doivent exister avant d'ouvrir le tableau de bord.
-      await enregistrerEdl({ ...edl, pieces: creerPieces(qte, edl.typeBien), statut: 'en_cours' })
+      const pieces = creerPieces(qte, edl.typeBien)
+      if (edl.meuble && edl.typeBien !== 'local') pieces.push(creerInventaire())
+      await enregistrerEdl({ ...edl, pieces, statut: 'en_cours' })
     }
     navigate(`/edl/${edl.id}`, { replace: true })
   }

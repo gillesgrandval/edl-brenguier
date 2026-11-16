@@ -1,5 +1,5 @@
 import { db, nouvelId } from './base'
-import type { Edl, Piece } from './types'
+import type { Cle, Edl, Piece, ReleveCompteur } from './types'
 
 /** Prochaine référence de l'année, ex. « EDL-2026-007 ». Compteur conservé dans la base. */
 async function prochaineReference(): Promise<string> {
@@ -42,7 +42,7 @@ export async function creerEdl(): Promise<string> {
     eauChaude: { mode: 'individuel', idemChauffage: true },
     pieces: [],
   }
-  await db.edls.add(edl)
+  await db.edls.add(normaliser(edl))
   return edl.id
 }
 
@@ -78,7 +78,7 @@ export function infosManquantes(edl: Edl): string[] {
   return manque
 }
 
-/** Pourcentage global : informations générales + éléments renseignés. */
+/** Pourcentage global : informations générales + éléments + rubriques. */
 export function progressionGlobale(edl: Edl): number {
   const INFOS = 6
   const infosFaites = INFOS - Math.min(INFOS, infosManquantes(edl).length)
@@ -89,7 +89,52 @@ export function progressionGlobale(edl: Edl): number {
     faits += pr.faits
     total += pr.total
   }
+  const r = etatRubriques(normaliser(edl))
+  faits += r.compteurs.faits + (r.cles ? 1 : 0) + (r.detecteur === true ? 1 : 0)
+  total += r.compteurs.total + 1 + (r.detecteur === null ? 0 : 1)
   return total ? Math.round((faits / total) * 100) : 0
+}
+
+// --- Rubriques transversales ------------------------------------------
+
+/** Un compteur est « fait » s'il est non applicable, ou relevé AVEC photo de l'index. */
+export function compteurFait(c: ReleveCompteur): boolean {
+  return !!c.nonApplicable || (!!c.index?.trim() && c.photoIds.length > 0)
+}
+
+export function etatRubriques(edl: Edl) {
+  const compteurs = edl.compteurs ?? []
+  return {
+    compteurs: { faits: compteurs.filter(compteurFait).length, total: compteurs.length },
+    cles: (edl.cles ?? []).some((c) => c.nombre > 0),
+    /** null = sans objet (local d'activité). */
+    detecteur: edl.typeBien === 'local' ? null : edl.detecteur?.present === false || !!edl.detecteur?.fonctionnement,
+  }
+}
+
+function comp(type: ReleveCompteur['type'], libelle: string): ReleveCompteur {
+  return { id: nouvelId(), type, libelle, photoIds: [] }
+}
+function cle(libelle: string): Cle {
+  return { id: nouvelId(), libelle, nombre: 0, photoIds: [] }
+}
+
+/**
+ * Complète un état des lieux avec les rubriques par défaut si elles manquent
+ * (états des lieux créés avec une version antérieure de l'application).
+ */
+export function normaliser(edl: Edl): Edl {
+  if (edl.compteurs && edl.cles && edl.detecteur) return edl
+  return {
+    ...edl,
+    compteurs: edl.compteurs ?? [comp('electricite', 'Électricité'), comp('gaz', 'Gaz'), comp('eau_froide', 'Eau froide'), comp('eau_chaude', 'Eau chaude')],
+    cles:
+      edl.cles ??
+      (edl.typeBien === 'local'
+        ? [cle("Porte d'accès"), cle('Portail'), cle('Badges'), cle('Télécommandes')]
+        : [cle("Porte d'entrée"), cle('Boîte aux lettres'), cle("Badge / bip d'accès")]),
+    detecteur: edl.detecteur ?? { photoIds: [] },
+  }
 }
 
 export function nomsLocataires(edl: Edl): string {

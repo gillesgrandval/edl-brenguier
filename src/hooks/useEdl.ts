@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { db } from '../db/base'
-import { enregistrerEdl } from '../db/edl'
+import { enregistrerEdl, normaliser } from '../db/edl'
 import type { Edl } from '../db/types'
 
 /**
@@ -23,8 +23,9 @@ export function useEdl(id: string | undefined) {
     if (!id) return
     db.edls.get(id).then((e) => {
       if (!actif) return
-      courant.current = e ?? null
-      setEdl(e ?? null)
+      const n = e ? normaliser(e) : null
+      courant.current = n
+      setEdl(n)
     })
     return () => {
       actif = false

@@ -18,6 +18,8 @@ export interface ModelePiece {
   /** Nombre proposé par défaut à la création, selon le type de bien. */
   parDefaut: Partial<Record<TypeBien, number>>
   elements: Def[]
+  /** Modèle spécial (inventaire du mobilier) : non proposé dans la liste des pièces. */
+  special?: boolean
 }
 
 // --- Briques communes -------------------------------------------------
@@ -333,10 +335,32 @@ export const MODELES: ModelePiece[] = [
       ['Espaces verts', 'exterieur'],
     ],
   },
+  // Inventaire du mobilier (logement meublé) — liste minimale du décret n° 2015-981 du 31 juillet 2015
+  {
+    cle: 'mobilier',
+    nom: 'Inventaire du mobilier',
+    biens: ['appartement', 'maison'],
+    parDefaut: {},
+    special: true,
+    elements: [
+      ['Literie (couette ou couverture)', 'equipement'],
+      ['Occultation des fenêtres des chambres', 'equipement', true],
+      ['Plaques de cuisson', 'equipement', true],
+      ['Four ou four à micro-ondes', 'equipement', true],
+      ['Réfrigérateur avec compartiment congélation', 'equipement', true],
+      ['Vaisselle (prise des repas)', 'equipement'],
+      ['Ustensiles de cuisine', 'equipement'],
+      ['Table', 'equipement'],
+      ['Sièges', 'equipement'],
+      ['Étagères de rangement', 'equipement'],
+      ['Luminaires', 'electricite', true],
+      ["Matériel d'entretien ménager", 'equipement'],
+    ],
+  },
 ]
 
 export function modelesPour(bien: TypeBien): ModelePiece[] {
-  return MODELES.filter((m) => m.biens.includes(bien))
+  return MODELES.filter((m) => m.biens.includes(bien) && !m.special)
 }
 
 export function modele(cle: string): ModelePiece | undefined {
@@ -370,4 +394,10 @@ export function creerPieces(quantites: Record<string, number>, bien: TypeBien): 
 
 export function quantitesParDefaut(bien: TypeBien): Record<string, number> {
   return Object.fromEntries(modelesPour(bien).map((m) => [m.cle, m.parDefaut[bien] ?? 0]))
+}
+
+/** Crée la pièce « Inventaire du mobilier » (logement meublé). */
+export function creerInventaire(): Piece {
+  const m = modele('mobilier')!
+  return { id: nouvelId(), modele: m.cle, nom: m.nom, elements: m.elements.map(creerElement), photoIds: [] }
 }

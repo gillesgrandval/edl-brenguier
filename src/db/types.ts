@@ -126,7 +126,53 @@ export interface Edl {
 
   pieces: Piece[]
   observationsGenerales?: string
+  remarquesLocataire?: string
+
+  // Rubriques transversales (complétées automatiquement à l'ouverture si absentes)
+  compteurs?: ReleveCompteur[]
+  cles?: Cle[]
+  detecteur?: Detecteur
+  /** Sortie : date de restitution des clés. */
+  dateRestitutionCles?: string
 }
+
+export type TypeCompteur = 'electricite' | 'gaz' | 'eau_froide' | 'eau_chaude' | 'autre'
+
+export interface ReleveCompteur {
+  id: string
+  type: TypeCompteur
+  libelle: string
+  /** N° PDL (électricité), PCE (gaz) ou n° de compteur. */
+  numero?: string
+  /** Index (ou heures pleines). */
+  index?: string
+  /** Index heures creuses (électricité). */
+  indexHC?: string
+  nonApplicable?: boolean
+  commentaire?: string
+  photoIds: string[]
+}
+
+export interface Cle {
+  id: string
+  libelle: string
+  nombre: number
+  commentaire?: string
+  photoIds: string[]
+}
+
+export interface Detecteur {
+  present?: boolean
+  fonctionnement?: Fonctionnement
+  commentaire?: string
+  photoIds: string[]
+}
+
+/** Forme dessinée sur une photo (coordonnées en pixels de l'image). */
+export type Forme =
+  | { type: 'fleche' | 'cercle' | 'rectangle'; couleur: string; epaisseur: number; x1: number; y1: number; x2: number; y2: number }
+  | { type: 'main'; couleur: string; epaisseur: number; points: [number, number][] }
+  | { type: 'texte'; couleur: string; taille: number; x: number; y: number; texte: string }
 
 export interface Photo {
   id: string
@@ -135,8 +181,12 @@ export interface Photo {
   elementId?: string
   /** Numéro unique dans l'état des lieux, repris dans le PDF. */
   numero: number
+  /** Image affichée (avec annotations éventuelles). */
   image: Blob
   miniature: Blob
+  /** Image d'origine sans annotations (conservée dès la première annotation). */
+  base?: Blob
+  annotations?: Forme[]
   legende?: string
   priseLe: string
 }

@@ -13,7 +13,7 @@ const TAILLE_MAX = 1600
 const TAILLE_MINIATURE = 360
 const QUALITE = 0.8
 
-function versBlob(c: HTMLCanvasElement, qualite: number): Promise<Blob> {
+export function versBlob(c: HTMLCanvasElement, qualite: number): Promise<Blob> {
   return new Promise((ok, ko) => c.toBlob((b) => (b ? ok(b) : ko(new Error('Conversion impossible'))), 'image/jpeg', qualite))
 }
 
@@ -63,15 +63,10 @@ export async function traiterPhoto(fichier: Blob, legende: string, date: Date): 
   dessinerBandeau(ctx, w, h, legende, horodatage)
   const image = await versBlob(c, QUALITE)
 
-  const em = Math.min(1, TAILLE_MINIATURE / Math.max(w, h))
-  const m = document.createElement('canvas')
-  m.width = Math.round(w * em)
-  m.height = Math.round(h * em)
-  m.getContext('2d')!.drawImage(c, 0, 0, m.width, m.height)
-  const miniature = await versBlob(m, 0.7)
+  const miniature = await creerMiniature(c)
 
   // Libère la mémoire tout de suite (important sur tablette).
-  c.width = c.height = m.width = m.height = 0
+  c.width = c.height = 0
   return { image, miniature }
 }
 
@@ -90,7 +85,7 @@ export async function enregistrerPhoto(params: {
   fichier: Blob
   edlId: string
   reference: string
-  pieceId: string
+  pieceId?: string
   pieceNom: string
   elementId?: string
   elementNom?: string
@@ -116,4 +111,16 @@ export async function enregistrerPhoto(params: {
 
 export async function supprimerPhotos(ids: string[]): Promise<void> {
   if (ids.length) await db.photos.bulkDelete(ids)
+}
+
+/** Miniature (≈ 360 px) à partir d'une image déjà dessinée. */
+export async function creerMiniature(source: HTMLCanvasElement): Promise<Blob> {
+  const em = Math.min(1, TAILLE_MINIATURE / Math.max(source.width, source.height))
+  const m = document.createElement('canvas')
+  m.width = Math.round(source.width * em)
+  m.height = Math.round(source.height * em)
+  m.getContext('2d')!.drawImage(source, 0, 0, m.width, m.height)
+  const b = await versBlob(m, 0.7)
+  m.width = m.height = 0
+  return b
 }

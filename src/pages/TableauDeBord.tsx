@@ -6,29 +6,28 @@ import {
   Check,
   ChevronRight,
   ClipboardList,
-  Gauge,
-  KeyRound,
-  Sofa,
-  AlarmSmoke,
-  MessageSquareText,
   PenLine,
   Trash2,
   Info,
   CircleAlert,
 } from 'lucide-react'
 import { db } from '../db/base'
-import { adresseCourte, infosManquantes, nomsLocataires, progressionGlobale, progressionPiece, supprimerEdl } from '../db/edl'
+import { adresseCourte, infosManquantes, nomsLocataires, progressionGlobale, normaliser, progressionPiece, supprimerEdl } from '../db/edl'
 import { LIBELLE_ACTE, LIBELLE_BIEN, formatDate } from '../libelles'
 import { Badge, BarreProgression, Confirmation, Section } from '../components/ui'
 import Chargement from '../components/Chargement'
 import { ICONE_BIEN } from '../components/icones'
 import BlocPieces from '../components/BlocPieces'
+import BlocRubriques from '../components/BlocRubriques'
 
 /** Vue d'ensemble d'un état des lieux : on y voit d'un coup d'œil ce qui reste à faire. */
 export default function TableauDeBord() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const edl = useLiveQuery(async () => (id ? ((await db.edls.get(id)) ?? null) : null), [id])
+  const edl = useLiveQuery(async () => {
+    const e = id ? await db.edls.get(id) : undefined
+    return e ? normaliser(e) : null
+  }, [id])
   const [confirmer, setConfirmer] = useState(false)
 
   if (edl === undefined) return <Chargement />
@@ -36,7 +35,8 @@ export default function TableauDeBord() {
 
   const pct = progressionGlobale(edl)
   const manque = infosManquantes(edl)
-  const piecesFinies = edl.pieces.filter((p) => {
+  const pieces = edl.pieces.filter((p) => p.modele !== 'mobilier')
+  const piecesFinies = pieces.filter((p) => {
     const pr = progressionPiece(p)
     return pr.total > 0 && pr.faits === pr.total
   }).length
@@ -72,7 +72,7 @@ export default function TableauDeBord() {
         <div style={{ flex: 1 }}>
           <BarreProgression pourcent={pct} />
           <p className="texte-doux" style={{ margin: '10px 0 0' }}>
-            {piecesFinies} pièce{piecesFinies > 1 ? 's' : ''} terminée{piecesFinies > 1 ? 's' : ''} sur {edl.pieces.length}
+            {piecesFinies} pièce{piecesFinies > 1 ? 's' : ''} terminée{piecesFinies > 1 ? 's' : ''} sur {pieces.length}
             {manque.length > 0 ? ` · ${manque.length} information${manque.length > 1 ? 's' : ''} à compléter` : ''}
           </p>
         </div>
@@ -99,15 +99,7 @@ export default function TableauDeBord() {
 
       <BlocPieces edl={edl} />
 
-      <Section titre="Rubriques">
-        <div className="grille-pieces">
-          <TuileAVenir icone={<Gauge />} nom="Compteurs" etape={5} />
-          <TuileAVenir icone={<KeyRound />} nom="Clés et badges" etape={5} />
-          {edl.typeBien !== 'local' && <TuileAVenir icone={<AlarmSmoke />} nom="Détecteur de fumée" etape={5} />}
-          {edl.meuble && <TuileAVenir icone={<Sofa />} nom="Inventaire du mobilier" etape={5} />}
-          <TuileAVenir icone={<MessageSquareText />} nom="Observations générales" etape={5} />
-        </div>
-      </Section>
+      <BlocRubriques edl={edl} />
 
       <Section titre="Clôture">
         <div className="grille-pieces">
