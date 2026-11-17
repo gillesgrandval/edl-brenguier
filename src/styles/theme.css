@@ -704,3 +704,13 @@ textarea.saisie { resize: vertical; }
 .empreinte code { font-size: 15px; word-break: break-all; background: var(--fond); padding: 10px 12px; border-radius: 8px; line-height: 1.6; }
 .statut-alerte { background: #fbe3d9; color: #b3471c; }
 .rapport-a-venir { display: flex; align-items: center; gap: 10px; justify-content: center; margin-top: 20px; }
+
+/* Étape 7 : rapport PDF */
+.rapport { display: flex; flex-direction: column; gap: 12px; margin: 16px 0; }
+.rapport-entete { display: flex; gap: 12px; align-items: center; }
+.rapport-entete > svg { color: var(--bronze); flex: none; }
+.rapport-entete div { display: flex; flex-direction: column; }
+.rapport-progres { display: flex; align-items: center; gap: 8px; margin: 0; }
+.rapport-pret { margin: 0; font-size: 14px; color: var(--texte-doux); word-break: break-all; }
+.rapport-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.rapport-actions .bouton { flex: 1 1 150px; text-decoration: none; }

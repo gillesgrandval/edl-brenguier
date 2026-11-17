@@ -8,7 +8,6 @@ import {
   Check,
   CircleAlert,
   ClipboardList,
-  FileText,
   Fingerprint,
   Gauge,
   KeyRound,
@@ -28,6 +27,7 @@ import { LIBELLE_ACTE, formatDate } from '../libelles'
 import { Champ, Confirmation, Interrupteur, Section } from '../components/ui'
 import { BoutonDictee } from '../components/Dictee'
 import PaveSignature from '../components/PaveSignature'
+import BoutonsRapport from '../components/BoutonsRapport'
 import Chargement from '../components/Chargement'
 
 /**
@@ -226,6 +226,7 @@ function AvantSignature({ id }: { id: string }) {
     <div className="saisie-piece">
       <EnTete edl={edl} titre="Récapitulatif et signatures" />
       <Recapitulatif edl={edl} />
+      <BoutonsRapport edl={edl} />
 
       <Section titre={`Remarques du ${preneur}`}>
         <div className="carte rubrique-carte">
@@ -356,6 +357,8 @@ function VueSignee({ edl }: { edl: Edl }) {
         </div>
       </div>
 
+      <BoutonsRapport edl={edl} />
+
       <Section titre="Signatures">
         <div className="signatures-grille">
           {(edl.signataires ?? []).map((s) => (
@@ -407,9 +410,7 @@ function VueSignee({ edl }: { edl: Edl }) {
 
       <Recapitulatif edl={edl} />
 
-      <div className="carte tuile-a-venir rapport-a-venir">
-        <FileText size={22} /> Rapport PDF — disponible à l'étape 7
-      </div>
+
     </div>
   )
 }

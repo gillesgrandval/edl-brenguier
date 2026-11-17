@@ -8,9 +8,7 @@ import {
   ClipboardList,
   PenLine,
   Trash2,
-  Info,
   CircleAlert,
-  FileText,
   Lock,
 } from 'lucide-react'
 import { db } from '../db/base'
@@ -21,6 +19,7 @@ import Chargement from '../components/Chargement'
 import { ICONE_BIEN } from '../components/icones'
 import BlocPieces from '../components/BlocPieces'
 import BlocRubriques from '../components/BlocRubriques'
+import BoutonsRapport from '../components/BoutonsRapport'
 
 /** Vue d'ensemble d'un état des lieux : on y voit d'un coup d'œil ce qui reste à faire. */
 export default function TableauDeBord() {
@@ -116,8 +115,8 @@ export default function TableauDeBord() {
           </span>
           <ChevronRight />
         </button>
-        <div className="grille-pieces" style={{ marginTop: 12 }}>
-          <TuileAVenir icone={<FileText />} nom="Rapport PDF" etape={7} />
+        <div style={{ marginTop: 12 }}>
+          <BoutonsRapport edl={edl} />
         </div>
       </Section>
 
@@ -148,19 +147,5 @@ export default function TableauDeBord() {
         }}
       />
     </>
-  )
-}
-
-function TuileAVenir(props: { icone: React.ReactNode; nom: string; etape: number }) {
-  return (
-    <div className="carte tuile-piece tuile-a-venir" aria-disabled>
-      <div className="tuile-piece-haut">
-        <span className="tuile-piece-icone">{props.icone}</span>
-        <span className="tuile-piece-nom">{props.nom}</span>
-      </div>
-      <span className="tuile-piece-detail">
-        <Info size={14} /> Disponible à l'étape {props.etape}
-      </span>
-    </div>
   )
 }
