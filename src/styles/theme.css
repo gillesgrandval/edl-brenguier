@@ -815,3 +815,16 @@ input[type="search"]::-webkit-search-cancel-button { display: none; }
 .table-grille input.saisie-nombre { width: 90px; min-height: 44px; padding: 6px 10px; }
 .table-grille td:first-child { min-width: 200px; }
 .rappel-sauvegarde { display: flex; align-items: center; gap: 10px; margin-top: 16px; text-decoration: none; }
+
+/* Étape 10 : aide */
+.aide-onglets { margin-bottom: 16px; }
+.aide-onglets button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.guide { line-height: 1.55; }
+.guide h2 { font-size: 26px; color: var(--principal); margin: 0 0 12px; }
+.guide h3 { font-size: 21px; color: var(--principal); margin: 26px 0 8px; padding-top: 14px; border-top: 1px solid var(--trait); }
+.guide h4 { font-size: 18px; margin: 18px 0 6px; }
+.guide p { margin: 8px 0; }
+.guide ul, .guide ol { margin: 8px 0; padding-left: 24px; display: grid; gap: 6px; }
+.entete-accueil { flex: none; }
+.entete-nav { min-width: 0; overflow-x: auto; scrollbar-width: none; }
+@media (max-width: 560px) { .aide-onglets button svg { display: none; } .aide-onglets button { font-size: 15px; padding: 0 6px; } }

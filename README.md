@@ -1,21 +1,31 @@
 # EDL Brenguier
 
-Application d'états des lieux (entrée / sortie) pour tablette Android, utilisable hors ligne :
-saisie pièce par pièce, photos annotées, signatures et rapport PDF.
+Application d'états des lieux (entrée, sortie, pré-état des lieux) du Groupe Brenguier, pour tablette Android, utilisable **hors ligne** : patrimoine immobilier, saisie pièce par pièce, photos annotées, dictée, lecture des compteurs, signatures, rapport PDF, comparatif de sortie avec vétusté.
 
-- **Type** : Progressive Web App (React, TypeScript, Vite)
-- **Données** : stockées uniquement sur la tablette (IndexedDB). Aucune donnée n'est envoyée sur Internet.
-- **Mise en ligne** : GitHub Pages, automatique à chaque envoi sur `main`
+**Adresse :** https://gillesgrandval.github.io/edl-brenguier/
 
-## Commandes utiles (sur le Mac)
+## Guides
+
+- [Guide d'installation](GUIDE_INSTALLATION.md) — installer l'application sur la tablette, mises à jour, sauvegardes
+- [Guide d'utilisation](GUIDE_UTILISATEUR.md) — du patrimoine au rapport PDF signé
+- [Limites connues](LIMITES.md)
+
+Ces guides sont aussi lisibles dans l'application (bouton **?**), même hors ligne.
+
+## Technique
+
+- **Type** : Progressive Web App (React, TypeScript, Vite), installable et entièrement hors ligne
+- **Données** : stockées uniquement sur l'appareil (IndexedDB). Aucune donnée n'est envoyée sur Internet, sauf la dictée vocale (reconnaissance de Google dans Chrome).
+- **Mise en ligne** : GitHub Pages, automatique à chaque envoi sur `main` (tests puis construction)
+- **Charte** : couleurs et polices centralisées dans `src/styles/theme.css` et `src/theme/charte.ts`
 
 | Commande | Rôle |
 |---|---|
 | `npm run dev` | Lance l'application en local pour tester |
+| `npm test` | Lance les tests automatiques |
 | `npm run build` | Construit la version à mettre en ligne |
 | `npm run preview` | Teste la version construite (dont le mode hors ligne) |
 
 ## Confidentialité
 
-Les PDF présents dans ce dossier (exemples d'états des lieux réels) sont exclus de Git par `.gitignore`
-et ne sont jamais mis en ligne.
+Ne sont **jamais** publiés (exclus par `.gitignore`) : les PDF d'exemples, le dossier `exemples/` (photos de compteurs, fichiers de test), le dossier `Charte Graphique/` (polices sous licence), les sauvegardes.
