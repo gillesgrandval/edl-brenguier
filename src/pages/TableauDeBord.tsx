@@ -9,6 +9,7 @@ import {
   PenLine,
   Trash2,
   CircleAlert,
+  Building2,
   Gauge,
   Lock,
 } from 'lucide-react'
@@ -22,6 +23,7 @@ import { ICONE_BIEN } from '../components/icones'
 import BlocPieces from '../components/BlocPieces'
 import BlocRubriques from '../components/BlocRubriques'
 import BoutonsRapport from '../components/BoutonsRapport'
+import { bienDepuisEdl } from '../db/patrimoine'
 
 /** Vue d'ensemble d'un état des lieux : on y voit d'un coup d'œil ce qui reste à faire. */
 export default function TableauDeBord() {
@@ -103,6 +105,38 @@ export default function TableauDeBord() {
           <ChevronRight />
         </button>
       </Section>
+
+      {!edl.bienId && edl.statut !== 'signe' && edl.bien.adresse.trim() && (
+        <button
+          className="carte tuile-ligne"
+          style={{ marginBottom: 12 }}
+          onClick={async () => {
+            const id = await bienDepuisEdl(edl)
+            navigate(`/patrimoine/${id}`)
+          }}
+        >
+          <span className="tuile-ligne-icone">
+            <Building2 size={22} />
+          </span>
+          <span className="tuile-ligne-texte">
+            <strong>Enregistrer ce bien dans le patrimoine</strong>
+            <span className="texte-doux">Adresse et pièces réutilisées pour les prochains états des lieux</span>
+          </span>
+          <ChevronRight />
+        </button>
+      )}
+      {edl.bienId && (
+        <button className="carte tuile-ligne" style={{ marginBottom: 12 }} onClick={() => navigate(`/patrimoine/${edl.bienId}`)}>
+          <span className="tuile-ligne-icone">
+            <Building2 size={22} />
+          </span>
+          <span className="tuile-ligne-texte">
+            <strong>Fiche du bien</strong>
+            <span className="texte-doux">Caractéristiques permanentes et historique des états des lieux</span>
+          </span>
+          <ChevronRight />
+        </button>
+      )}
 
       <BlocPieces edl={edl} />
 

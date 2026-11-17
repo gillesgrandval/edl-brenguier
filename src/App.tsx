@@ -1,12 +1,15 @@
 import { useEffect } from 'react'
-import { Routes, Route, useLocation, Link } from 'react-router-dom'
-import { Wifi, WifiOff } from 'lucide-react'
+import { Routes, Route, useLocation, Link, NavLink } from 'react-router-dom'
+import { Building2, ClipboardList, Wifi, WifiOff } from 'lucide-react'
 import Accueil from './pages/Accueil'
 import Infos from './pages/Infos'
 import TableauDeBord from './pages/TableauDeBord'
 import Piece from './pages/Piece'
 import Signature from './pages/Signature'
 import ChoixBien from './pages/ChoixBien'
+import Patrimoine from './pages/Patrimoine'
+import FicheBien from './pages/FicheBien'
+import ImportExcel from './pages/ImportExcel'
 import { Cles, Compteurs, Detecteur, Observations } from './pages/Rubriques'
 import MiseAJour from './components/MiseAJour'
 import logoSignatureBlanc from './assets/charte/logo-signature-blanc.png'
@@ -26,8 +29,15 @@ export default function App() {
       <header className="entete">
         <Link to="/" className="entete-accueil" aria-label="Accueil">
           <img className="entete-logo" src={logoSignatureBlanc} alt="Groupe Brenguier" />
-          <span className="entete-titre">États des lieux</span>
         </Link>
+        <nav className="entete-nav">
+          <NavLink to="/" end className={({ isActive }) => (isActive || pathname.startsWith('/edl') || pathname === '/nouveau' ? 'actif' : '')}>
+            <ClipboardList size={18} /> <span>États des lieux</span>
+          </NavLink>
+          <NavLink to="/patrimoine" className={({ isActive }) => (isActive ? 'actif' : '')}>
+            <Building2 size={18} /> <span>Patrimoine</span>
+          </NavLink>
+        </nav>
         <div className="reseau" aria-live="polite">
           {enLigne ? <Wifi size={18} /> : <WifiOff size={18} />}
           {enLigne ? 'En ligne' : 'Hors ligne'}
@@ -38,6 +48,9 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Accueil />} />
           <Route path="/nouveau" element={<ChoixBien />} />
+          <Route path="/patrimoine" element={<Patrimoine />} />
+          <Route path="/patrimoine/import" element={<ImportExcel />} />
+          <Route path="/patrimoine/:id" element={<FicheBien />} />
           <Route path="/edl/:id" element={<TableauDeBord />} />
           <Route path="/edl/:id/infos" element={<Infos />} />
           <Route path="/edl/:id/piece/:pieceId" element={<Piece />} />

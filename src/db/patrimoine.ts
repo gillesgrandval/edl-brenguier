@@ -158,3 +158,58 @@ export function installerPatrimoineIntegre(): Promise<void> {
   })
   return installation
 }
+
+// --- Gestion des fiches -----------------------------------------------------
+
+export function bienVide(): Bien {
+  const maintenant = new Date().toISOString()
+  return { id: nouvelId(), categorie: 'appartement', adresse: '', codePostal: '', ville: '', annexes: [], equipements: [], pieces: [], compteurs: ['electricite', 'eau_froide'], creeLe: maintenant, modifieLe: maintenant }
+}
+
+export async function enregistrerBien(b: Bien): Promise<void> {
+  await db.biens.put({ ...b, modifieLe: new Date().toISOString() })
+}
+
+/** Une fiche n'est supprimable que si aucun état des lieux n'y est rattaché (l'historique est conservé). */
+export async function supprimerBien(id: string): Promise<boolean> {
+  return db.transaction('rw', db.biens, db.edls, async () => {
+    if ((await db.edls.where('bienId').equals(id).count()) > 0) return false
+    await db.biens.delete(id)
+    return true
+  })
+}
+
+const CATEGORIE_DEPUIS_EDL: Record<TypeBien, CategorieBien> = { appartement: 'appartement', maison: 'maison', local: 'local_commercial' }
+
+/**
+ * Mode B : enregistre dans le patrimoine le bien d'un état des lieux saisi librement,
+ * et rattache l'état des lieux à cette nouvelle fiche. Les états (usure, etc.) ne sont pas repris :
+ * seule la composition (pièces, équipements) l'est.
+ */
+export async function bienDepuisEdl(edl: Edl): Promise<string> {
+  const b = bienVide()
+  const fiche: Bien = {
+    ...b,
+    categorie: CATEGORIE_DEPUIS_EDL[edl.typeBien],
+    adresse: edl.bien.adresse,
+    complement: edl.bien.complement,
+    codePostal: edl.bien.codePostal,
+    ville: edl.bien.ville,
+    etage: edl.bien.etage,
+    lot: edl.bien.lot,
+    surface: edl.bien.surface,
+    nbPieces: edl.bien.nbPieces,
+    meuble: edl.meuble,
+    societe: edl.bailleur.raisonSociale || undefined,
+    annexes: [...edl.bien.annexes],
+    pieces: edl.pieces.filter((p) => p.modele !== 'mobilier').map((p) => ({ modele: p.modele, nom: p.nom })),
+    compteurs: [...new Set((edl.compteurs ?? []).filter((c) => !c.nonApplicable && c.type !== 'autre').map((c) => c.type))],
+  }
+  await db.transaction('rw', db.biens, db.edls, async () => {
+    await db.biens.add(fiche)
+    const e = await db.edls.get(edl.id)
+    // Un état des lieux signé n'est jamais modifié : seul un brouillon est rattaché.
+    if (e && e.statut !== 'signe') await db.edls.update(edl.id, { bienId: fiche.id })
+  })
+  return fiche.id
+}

@@ -4,7 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { ArrowLeft, Building2, ChevronRight, ClipboardList, MapPin, PencilLine, Search, X } from 'lucide-react'
 import { db, demanderStockagePersistant } from '../db/base'
 import { creerEdl, maintenantLocal } from '../db/edl'
-import { LIBELLE_CATEGORIE, creerEdlDepuisBien, libelleBien } from '../db/patrimoine'
+import { LIBELLE_CATEGORIE, bienVide, creerEdlDepuisBien, enregistrerBien, libelleBien } from '../db/patrimoine'
 import type { Bien } from '../db/types'
 import { LIBELLE_ACTE, formatDate } from '../libelles'
 import { Champ, Section } from '../components/ui'
@@ -63,6 +63,12 @@ export default function ChoixBien() {
     await demanderStockagePersistant()
     const id = await creerEdlDepuisBien(choisi, date)
     navigate(`/edl/${id}`, { replace: true })
+  }
+
+  async function creerFiche() {
+    const b = bienVide()
+    await enregistrerBien(b)
+    navigate(`/patrimoine/${b.id}?nouveau=1`)
   }
 
   async function saisieLibre() {
@@ -180,13 +186,23 @@ export default function ChoixBien() {
       </Section>
 
       <Section titre="Bien absent du patrimoine">
+        <button className="carte tuile-ligne" onClick={creerFiche} disabled={enCours} style={{ marginBottom: 12 }}>
+          <span className="tuile-ligne-icone">
+            <Building2 size={22} />
+          </span>
+          <span className="tuile-ligne-texte">
+            <strong>Créer la fiche du bien</strong>
+            <span className="texte-doux">Enregistrée dans le patrimoine pour les prochaines fois, puis préparation de l'état des lieux</span>
+          </span>
+          <ChevronRight />
+        </button>
         <button className="carte tuile-ligne" onClick={saisieLibre} disabled={enCours}>
           <span className="tuile-ligne-icone">
             <PencilLine size={22} />
           </span>
           <span className="tuile-ligne-texte">
-            <strong>Saisir un nouveau bien</strong>
-            <span className="texte-doux">Adresse, type et pièces à renseigner pas à pas</span>
+            <strong>Saisie libre, sans fiche</strong>
+            <span className="texte-doux">Adresse, type et pièces pas à pas (le bien pourra être ajouté au patrimoine ensuite)</span>
           </span>
           <ChevronRight />
         </button>
