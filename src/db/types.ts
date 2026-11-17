@@ -5,7 +5,8 @@
    et reliées par identifiant.
    ------------------------------------------------------------------ */
 
-export type TypeActe = 'entree' | 'sortie' | 'pre'
+/** « À définir » : état des lieux préparé à l'avance, type à choisir avant la signature. */
+export type TypeActe = 'entree' | 'sortie' | 'pre' | 'a_definir'
 export type TypeBien = 'appartement' | 'maison' | 'local'
 export type Statut = 'brouillon' | 'en_cours' | 'signe'
 
@@ -87,7 +88,7 @@ export interface Edl {
   typeBien: TypeBien
   meuble: boolean
   statut: Statut
-  /** Date et heure de la visite (ISO). */
+  /** Date et heure de la visite (« AAAA-MM-JJTHH:MM ») ou date seule (« AAAA-MM-JJ ») si l'heure n'est pas encore fixée. */
   dateVisite: string
   creeLe: string
   modifieLe: string
@@ -120,6 +121,8 @@ export interface Edl {
   nouvelleAdresseLocataire?: string
   /** Sortie : état des lieux d'entrée de référence (étape 8). */
   edlEntreeId?: string
+  /** Bien du patrimoine dont cet état des lieux est issu (identifiant permanent). */
+  bienId?: string
 
   chauffage: Energie
   eauChaude: Energie & { idemChauffage?: boolean }
@@ -187,6 +190,8 @@ export interface ReleveCompteur {
   index?: string
   /** Index heures creuses (électricité). */
   indexHC?: string
+  /** Date du relevé (renseignée automatiquement à la saisie de l'index, modifiable). */
+  dateReleve?: string
   nonApplicable?: boolean
   commentaire?: string
   photoIds: string[]
@@ -233,4 +238,66 @@ export interface Photo {
 export interface Meta {
   cle: string
   valeur: unknown
+}
+
+// =====================================================================
+// Patrimoine immobilier
+// =====================================================================
+
+export type CategorieBien = 'appartement' | 'villa' | 'maison' | 'immeuble' | 'entrepot' | 'local_commercial' | 'mobil_home' | 'autre'
+
+/** Équipement connu d'une pièce, ajouté au parcours de contrôle (état à vérifier sur place). */
+export interface EquipementConnu {
+  libelle: string
+  categorie?: Categorie
+  /** Remplace un élément du modèle portant ce libellé (ex. « Hotte » → « Hotte aspirante »). */
+  remplace?: string
+  /** Remarque préalable (ex. « emplacement à confirmer »). */
+  note?: string
+}
+
+export interface PieceBien {
+  /** Modèle de pièce (voir modeles/pieces.ts). */
+  modele: string
+  nom: string
+  equipements?: EquipementConnu[]
+}
+
+/**
+ * Fiche permanente d'un bien du patrimoine.
+ * Un état des lieux en garde une COPIE : le modifier ne change jamais la fiche.
+ */
+export interface Bien {
+  /** Identifiant technique permanent, indépendant du numéro de lot. */
+  id: string
+  /** Identifiant dans le fichier source (Excel), pour les mises à jour sans doublon. */
+  identifiantExterne?: string
+  reference?: string
+  lot?: string
+  societe?: string
+  categorie: CategorieBien
+  /** Ex. « T3 ». */
+  typologie?: string
+  adresse: string
+  complement?: string
+  codePostal: string
+  ville: string
+  residence?: string
+  batiment?: string
+  etage?: string
+  porte?: string
+  surface?: string
+  nbPieces?: string
+  chambres?: number
+  sallesEau?: number
+  wc?: number
+  meuble?: boolean
+  annexes: string[]
+  equipements: string[]
+  pieces: PieceBien[]
+  /** Compteurs à relever lors de chaque état des lieux. */
+  compteurs: TypeCompteur[]
+  infos?: string
+  creeLe: string
+  modifieLe: string
 }

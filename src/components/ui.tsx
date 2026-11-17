@@ -10,7 +10,7 @@ export function Champ(props: {
   label: string
   valeur: string | undefined
   onChange: (v: string) => void
-  type?: 'text' | 'tel' | 'email' | 'number' | 'datetime-local'
+  type?: 'text' | 'tel' | 'email' | 'number' | 'datetime-local' | 'date' | 'time'
   placeholder?: string
   aide?: string
   large?: boolean

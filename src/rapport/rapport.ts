@@ -71,6 +71,7 @@ const TITRE_ACTE: Record<Edl['typeActe'], string> = {
   entree: "État des lieux d'entrée",
   sortie: 'État des lieux de sortie',
   pre: 'Pré-état des lieux',
+  a_definir: 'État des lieux',
 }
 
 const FONCTIONNEMENT: Record<string, string> = { ok: 'OK', defaillant: 'Défaillant', non_teste: 'Non testé' }
@@ -599,7 +600,7 @@ async function dessinerPhoto(doc: jsPDF, p: Photo, x: number, y: number, l: numb
 
 /** Nom de fichier lisible : EDL-2026-012_Entree_12-rue-des-Lilas.pdf */
 export function nomFichier(edl: Edl): string {
-  const acte = { entree: 'Entree', sortie: 'Sortie', pre: 'Pre-EDL' }[edl.typeActe]
+  const acte = { entree: 'Entree', sortie: 'Sortie', pre: 'Pre-EDL', a_definir: 'EDL' }[edl.typeActe]
   const adresse = (edl.bien.adresse || 'bien')
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')

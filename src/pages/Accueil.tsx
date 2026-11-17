@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Plus, Search, ChevronRight, HardDrive, CloudOff, ShieldCheck, ClipboardList, X } from 'lucide-react'
+import { Plus, Search, ChevronRight, HardDrive, CloudOff, ShieldCheck, ClipboardList, X, FileUp, CalendarClock, Gauge } from 'lucide-react'
 import { ICONE_BIEN } from '../components/icones'
 import { db, demanderStockagePersistant } from '../db/base'
-import { adresseCourte, creerEdl, nomsLocataires, progressionGlobale } from '../db/edl'
+import { adresseCourte, compteurFait, creerEdl, nomsLocataires, progressionGlobale } from '../db/edl'
+import { importerPreparation } from '../db/patrimoine'
 import type { Edl, Statut, TypeActe, TypeBien } from '../db/types'
 import { LIBELLE_ACTE, LIBELLE_BIEN, LIBELLE_STATUT, formatDate } from '../libelles'
 import { Badge, BarreProgression } from '../components/ui'
@@ -42,6 +43,28 @@ export default function Accueil() {
 
   const total = edls?.length ?? 0
   const enCours = edls?.filter((e) => e.statut !== 'signe').length ?? 0
+  // À réaliser : états des lieux non signés, du plus proche au plus lointain.
+  const aRealiser = (edls ?? []).filter((e) => e.statut !== 'signe').sort((a, b) => a.dateVisite.localeCompare(b.dateVisite))
+
+  // --- Import d'un fichier de patrimoine (reçu par e-mail) ---
+  const fichier = useRef<HTMLInputElement>(null)
+  const [message, setMessage] = useState<{ ok: boolean; texte: string } | null>(null)
+  async function importer(f: File) {
+    setMessage(null)
+    try {
+      await demanderStockagePersistant()
+      const r = await importerPreparation(JSON.parse(await f.text()))
+      const morceaux = [
+        r.biensAjoutes && `${r.biensAjoutes} bien${r.biensAjoutes > 1 ? 's' : ''} ajouté${r.biensAjoutes > 1 ? 's' : ''}`,
+        r.biensMisAJour && `${r.biensMisAJour} bien${r.biensMisAJour > 1 ? 's' : ''} mis à jour`,
+        r.edlCrees.length && `${r.edlCrees.length} état${r.edlCrees.length > 1 ? 's' : ''} des lieux préparé${r.edlCrees.length > 1 ? 's' : ''}`,
+        r.edlDejaPresents && `${r.edlDejaPresents} déjà présent${r.edlDejaPresents > 1 ? 's' : ''}`,
+      ].filter(Boolean)
+      setMessage({ ok: true, texte: `Import réussi : ${morceaux.join(', ') || 'rien de nouveau'}.` })
+    } catch (e) {
+      setMessage({ ok: false, texte: e instanceof SyntaxError ? 'Ce fichier est illisible (format inattendu).' : (e as Error).message })
+    }
+  }
 
   return (
     <>
@@ -51,18 +74,59 @@ export default function Accueil() {
           <h1>États des lieux</h1>
           <hr className="filet" />
           <p className="texte-doux">
-            {total === 0
+            {edls === undefined
+              ? 'Chargement…'
+              : total === 0
               ? 'Aucun état des lieux pour le moment. Commencez par en créer un.'
               : `${total} état${total > 1 ? 's' : ''} des lieux · ${enCours} à terminer`}
           </p>
         </div>
-        <button className="bouton bouton-principal bouton-xl" onClick={nouveau} disabled={creation}>
-          <Plus size={24} /> Nouvel état des lieux
-        </button>
+        <div className="accueil-actions">
+          <button className="bouton bouton-principal bouton-xl" onClick={nouveau} disabled={creation}>
+            <Plus size={24} /> Nouvel état des lieux
+          </button>
+          <button className="bouton bouton-discret" onClick={() => fichier.current?.click()}>
+            <FileUp size={20} /> Importer un fichier de patrimoine
+          </button>
+          <input
+            ref={fichier}
+            type="file"
+            accept=".json,application/json"
+            hidden
+            onChange={(e) => {
+              const f = e.target.files?.[0]
+              e.target.value = ''
+              if (f) void importer(f)
+            }}
+          />
+        </div>
       </section>
+
+      {message && (
+        <div className={`carte message-import ${message.ok ? 'message-ok' : 'message-erreur'}`} role="status">
+          {message.texte}
+          <button className="bouton-icone" onClick={() => setMessage(null)} aria-label="Fermer">
+            <X size={18} />
+          </button>
+        </div>
+      )}
+
+      {aRealiser.length > 0 && (
+        <section className="a-realiser">
+          <h2>
+            <CalendarClock size={22} /> À réaliser
+          </h2>
+          <div className="liste-edl">
+            {aRealiser.map((e) => (
+              <CarteEdl key={e.id} edl={e} onOuvrir={() => navigate(`/edl/${e.id}`)} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {total > 0 && (
         <>
+          <h2 className="titre-liste">Tous les états des lieux</h2>
           <div className="barre-recherche">
             <Search size={20} />
             <input
@@ -140,8 +204,14 @@ function CarteEdl({ edl, onOuvrir }: { edl: Edl; onOuvrir: () => void }) {
         </div>
         <div className="carte-edl-adresse">{adresseCourte(edl)}</div>
         <div className="carte-edl-detail">
-          {nomsLocataires(edl)} · {LIBELLE_BIEN[edl.typeBien]} · {formatDate(edl.dateVisite)}
+          {nomsLocataires(edl)} · {LIBELLE_BIEN[edl.typeBien]} · {edl.statut === 'signe' ? '' : 'Prévu le '}
+          {formatDate(edl.dateVisite)}
         </div>
+        {edl.statut !== 'signe' && (edl.compteurs ?? []).some((c) => !compteurFait(c)) && (
+          <div className="carte-edl-rappel">
+            <Gauge size={15} /> Relevés de compteurs à effectuer
+          </div>
+        )}
         <div className="carte-edl-progression">
           <BarreProgression pourcent={pct} fine />
           <span>{pct} %</span>

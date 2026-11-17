@@ -714,3 +714,14 @@ textarea.saisie { resize: vertical; }
 .rapport-pret { margin: 0; font-size: 14px; color: var(--texte-doux); word-break: break-all; }
 .rapport-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .rapport-actions .bouton { flex: 1 1 150px; text-decoration: none; }
+
+/* Patrimoine : accueil, à réaliser, import */
+.accueil-actions { display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+.a-realiser h2, .titre-liste { display: flex; align-items: center; gap: 8px; font-size: 22px; margin: 24px 0 12px; }
+.carte-edl-rappel { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: #9a6400; margin-top: 4px; }
+.message-import { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 16px; font-weight: 700; }
+.message-ok { background: #eef7f1; border-color: #cfe6d8; color: var(--etat-neuf); }
+.message-erreur { background: #fbe3d9; border-color: #f2c4b0; color: #b3471c; }
+.rappels { display: grid; gap: 10px; margin: 16px 0; }
+.rappel { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; font: inherit; font-weight: 700; color: #9a6400; background: #fdf8ee; border-color: #f0dcb0; cursor: pointer; }
+.rappel span { flex: 1; }

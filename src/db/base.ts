@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
-import type { Edl, Entite, Meta, Photo, SignatureImage } from './types'
+import type { Bien, Edl, Entite, Meta, Photo, SignatureImage } from './types'
 
 /**
  * Base de données interne à la tablette (IndexedDB).
@@ -14,6 +14,7 @@ export const db = new Dexie('edl-brenguier') as Dexie & {
   entites: EntityTable<Entite, 'id'>
   meta: EntityTable<Meta, 'cle'>
   signatures: EntityTable<SignatureImage, 'id'>
+  biens: EntityTable<Bien, 'id'>
 }
 
 db.version(1).stores({
@@ -26,6 +27,12 @@ db.version(1).stores({
 // Version 2 (étape 6) : ajout des signatures manuscrites. Les données existantes sont conservées.
 db.version(2).stores({
   signatures: 'id, edlId',
+})
+
+// Version 3 : patrimoine immobilier, et lien de chaque état des lieux vers son bien.
+db.version(3).stores({
+  edls: 'id, reference, statut, typeActe, typeBien, modifieLe, bienId',
+  biens: 'id, identifiantExterne, ville, categorie, residence, societe, lot',
 })
 
 /** Demande à Android de ne jamais effacer automatiquement les données. */

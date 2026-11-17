@@ -2,7 +2,7 @@ import { db, nouvelId } from './base'
 import type { Cle, Edl, Piece, ReleveCompteur } from './types'
 
 /** Prochaine référence de l'année, ex. « EDL-2026-007 ». Compteur conservé dans la base. */
-async function prochaineReference(): Promise<string> {
+export async function prochaineReference(): Promise<string> {
   const annee = new Date().getFullYear()
   const cle = `compteur-${annee}`
   return db.transaction('rw', db.meta, async () => {

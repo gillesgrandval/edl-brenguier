@@ -4,6 +4,7 @@ export const LIBELLE_ACTE: Record<TypeActe, string> = {
   entree: 'Entrée',
   sortie: 'Sortie',
   pre: 'Pré-état des lieux',
+  a_definir: 'Type à définir',
 }
 
 export const LIBELLE_BIEN: Record<TypeBien, string> = {
@@ -33,7 +34,15 @@ export const ENERGIES = ['Électricité', 'Gaz', 'Fioul', 'Pompe à chaleur', 'B
 
 export const ANNEXES = ['Cave', 'Parking', 'Box / garage', 'Jardin', 'Terrasse', 'Grenier', 'Local vélos']
 
+/** true si la date de visite est fixée sans heure (« AAAA-MM-JJ »). */
+export const sansHeure = (iso: string) => /^\d{4}-\d{2}-\d{2}$/.test(iso)
+
 export function formatDate(iso: string, avecHeure = false): string {
+  // Date seule : lue comme une date locale (et non à minuit UTC), sans heure.
+  if (sansHeure(iso)) {
+    const [a, m, j] = iso.split('-').map(Number)
+    return new Date(a, m - 1, j).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }) + (avecHeure ? ' (heure à fixer)' : '')
+  }
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return '—'
   return d.toLocaleDateString('fr-FR', {

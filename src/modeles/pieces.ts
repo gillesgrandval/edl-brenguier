@@ -1,4 +1,4 @@
-import type { Categorie, Element, Piece, TypeBien } from '../db/types'
+import type { Categorie, Element, Piece, PieceBien, TypeBien } from '../db/types'
 import { nouvelId } from '../db/base'
 
 /* ------------------------------------------------------------------
@@ -42,6 +42,18 @@ const ELECTRICITE: Def[] = [
 const CHAUFFAGE: Def[] = [['Radiateur / chauffage', 'chauffage', true]]
 
 const PIECE_DE_VIE: Def[] = [...MENUISERIES, ...SOL_MURS_PLAFOND, ...ELECTRICITE, ...CHAUFFAGE]
+const COIN_CUISINE: Def[] = [
+  ['Crédence', 'revetement'],
+  ['Plan de travail', 'equipement'],
+  ['Meubles hauts', 'equipement'],
+  ['Meubles bas', 'equipement'],
+  ['Évier', 'plomberie'],
+  ['Robinetterie', 'plomberie', true],
+  ['Plaques de cuisson', 'equipement', true],
+  ['Hotte', 'equipement', true],
+  ['Four', 'equipement', true],
+  ['VMC / aération', 'equipement', true],
+]
 
 // --- Modèles ----------------------------------------------------------
 export const MODELES: ModelePiece[] = [
@@ -73,19 +85,14 @@ export const MODELES: ModelePiece[] = [
     nom: 'Cuisine',
     biens: ['appartement', 'maison', 'local'],
     parDefaut: { appartement: 1, maison: 1 },
-    elements: [
-      ...PIECE_DE_VIE,
-      ['Crédence', 'revetement'],
-      ['Plan de travail', 'equipement'],
-      ['Meubles hauts', 'equipement'],
-      ['Meubles bas', 'equipement'],
-      ['Évier', 'plomberie'],
-      ['Robinetterie', 'plomberie', true],
-      ['Plaques de cuisson', 'equipement', true],
-      ['Hotte', 'equipement', true],
-      ['Four', 'equipement', true],
-      ['VMC / aération', 'equipement', true],
-    ],
+    elements: [...PIECE_DE_VIE, ...COIN_CUISINE],
+  },
+  {
+    cle: 'piece_vie_cuisine',
+    nom: 'Pièce de vie avec cuisine',
+    biens: ['appartement', 'maison'],
+    parDefaut: {},
+    elements: [...PIECE_DE_VIE, ...COIN_CUISINE],
   },
   {
     cle: 'chambre',
@@ -130,6 +137,29 @@ export const MODELES: ModelePiece[] = [
       ['Robinetterie', 'plomberie', true],
       ['VMC / aération', 'equipement', true],
       ['Éclairage / points lumineux', 'electricite', true],
+    ],
+  },
+  {
+    cle: 'salle_eau_wc',
+    nom: "Salle d'eau avec WC",
+    biens: ['appartement', 'maison'],
+    parDefaut: {},
+    elements: [
+      ['Porte', 'menuiserie'],
+      ['Fenêtre(s)', 'menuiserie'],
+      ...SOL_MURS_PLAFOND,
+      ['Faïence', 'revetement'],
+      ['Douche / receveur', 'plomberie'],
+      ['Paroi / pare-douche', 'equipement'],
+      ['Lavabo / vasque', 'plomberie'],
+      ['Robinetterie', 'plomberie', true],
+      ['Meuble vasque', 'equipement'],
+      ['Miroir', 'equipement'],
+      ['Cuvette / abattant', 'plomberie'],
+      ["Chasse d'eau", 'plomberie', true],
+      ['Sèche-serviettes / radiateur', 'chauffage', true],
+      ['VMC / aération', 'equipement', true],
+      ...ELECTRICITE,
     ],
   },
   {
@@ -179,6 +209,16 @@ export const MODELES: ModelePiece[] = [
       ['Plafond', 'revetement'],
       ['Prises électriques', 'electricite', true],
       ['Éclairage / points lumineux', 'electricite', true],
+    ],
+  },
+  {
+    cle: 'parking',
+    nom: 'Place de parking',
+    biens: ['appartement', 'maison'],
+    parDefaut: {},
+    elements: [
+      ['Sol', 'exterieur'],
+      ['Marquage / numéro de place', 'exterieur'],
     ],
   },
   {
@@ -400,4 +440,28 @@ export function quantitesParDefaut(bien: TypeBien): Record<string, number> {
 export function creerInventaire(): Piece {
   const m = modele('mobilier')!
   return { id: nouvelId(), modele: m.cle, nom: m.nom, elements: m.elements.map(creerElement), photoIds: [] }
+}
+
+/**
+ * Crée les pièces d'un état des lieux à partir de la composition d'un bien du patrimoine.
+ * Les équipements connus sont ajoutés (ou remplacent l'élément équivalent du modèle),
+ * SANS état : ils restent à vérifier lors de la visite.
+ */
+export function creerPiecesDepuisBien(compo: PieceBien[]): Piece[] {
+  const parModele = new Map<string, number>()
+  for (const p of compo) parModele.set(p.modele, (parModele.get(p.modele) ?? 0) + 1)
+  return compo.map((p) => {
+    const m = modele(p.modele) ?? modele('sejour')!
+    const elements = m.elements.map(creerElement)
+    for (const eq of p.equipements ?? []) {
+      const nouveau: Element = {
+        ...creerElement([eq.libelle, eq.categorie ?? 'equipement', true]),
+        commentaire: eq.note,
+      }
+      const i = eq.remplace ? elements.findIndex((e) => e.libelle.toLowerCase() === eq.remplace!.toLowerCase()) : -1
+      if (i >= 0) elements[i] = { ...nouveau, categorie: eq.categorie ?? elements[i].categorie }
+      else if (!elements.some((e) => e.libelle.toLowerCase() === eq.libelle.toLowerCase())) elements.push(nouveau)
+    }
+    return { id: nouvelId(), modele: m.cle, nom: p.nom || m.nom, elements, photoIds: [] }
+  })
 }

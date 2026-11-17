@@ -190,6 +190,7 @@ function AvantSignature({ id }: { id: string }) {
   const [saisies, setSaisies] = useState<Record<string, SignatureSaisie>>({})
   const [certifie, setCertifie] = useState(false)
   const [confirmer, setConfirmer] = useState(false)
+  const [rappelCompteurs, setRappelCompteurs] = useState(false)
   const [enCours, setEnCours] = useState(false)
   const [erreur, setErreur] = useState<string>()
 
@@ -204,7 +205,9 @@ function AvantSignature({ id }: { id: string }) {
     return s.role === 'locataire' && v.absent ? true : !!v.image
   }
   const manquantes = attendus.filter((s) => !complet(s))
-  const pret = manquantes.length === 0 && certifie && attendus.some((s) => s.role === 'locataire')
+  const acteADefinir = edl.typeActe === 'a_definir'
+  const compteursAFaire = (edl.compteurs ?? []).filter((c) => !compteurFait(c))
+  const pret = manquantes.length === 0 && certifie && attendus.some((s) => s.role === 'locataire') && !acteADefinir
   const preneur = edl.typeBien === 'local' ? 'preneur' : 'locataire'
 
   async function signer() {
@@ -252,6 +255,11 @@ function AvantSignature({ id }: { id: string }) {
           </p>
         </div>
 
+        {acteADefinir && (
+          <p className="dictee-erreur">
+            Le type d'état des lieux (entrée, sortie ou pré-état des lieux) est encore « à définir » : choisissez-le dans les informations générales avant de signer.
+          </p>
+        )}
         {attendus.length === 1 && (
           <p className="dictee-erreur">Aucun {preneur} n'est renseigné : complétez les informations générales avant de signer.</p>
         )}
@@ -293,15 +301,36 @@ function AvantSignature({ id }: { id: string }) {
 
         {erreur && <p className="dictee-erreur">{erreur}</p>}
 
-        <button className="bouton bouton-accent bouton-signer" disabled={!pret || enCours} onClick={() => setConfirmer(true)}>
+        <button className="bouton bouton-accent bouton-signer" disabled={!pret || enCours} onClick={() => (compteursAFaire.length ? setRappelCompteurs(true) : setConfirmer(true))}>
           {enCours ? <Loader2 size={22} className="tourne" /> : <Lock size={22} />} {enCours ? 'Signature en cours…' : 'Signer et verrouiller'}
         </button>
         {!pret && !enCours && (
           <p className="texte-doux" style={{ textAlign: 'center' }}>
-            {manquantes.length ? `Signature${manquantes.length > 1 ? 's' : ''} attendue${manquantes.length > 1 ? 's' : ''} : ${manquantes.map((m) => m.nom).join(', ')}.` : 'Cochez la déclaration ci-dessus.'}
+            {acteADefinir ? 'Choisissez d’abord le type d’état des lieux (entrée, sortie…) dans les informations générales.' : manquantes.length ? `Signature${manquantes.length > 1 ? 's' : ''} attendue${manquantes.length > 1 ? 's' : ''} : ${manquantes.map((m) => m.nom).join(', ')}.` : 'Cochez la déclaration ci-dessus.'}
           </p>
         )}
       </Section>
+
+      <Confirmation
+        ouvert={rappelCompteurs}
+        titre="Relevés de compteurs à effectuer"
+        message={
+          <>
+            {compteursAFaire.map((c) => (
+              <div key={c.id}>
+                <strong>{c.libelle}</strong> : {c.index?.trim() ? 'photo de l’index manquante' : 'relevé non effectué'}
+              </div>
+            ))}
+            <p style={{ marginBottom: 0 }}>Ces relevés figureront comme « non relevé » au rapport. Les effectuer avant de signer est vivement conseillé.</p>
+          </>
+        }
+        libelleOk="Signer quand même"
+        onAnnuler={() => setRappelCompteurs(false)}
+        onOk={() => {
+          setRappelCompteurs(false)
+          setConfirmer(true)
+        }}
+      />
 
       <Confirmation
         ouvert={confirmer}

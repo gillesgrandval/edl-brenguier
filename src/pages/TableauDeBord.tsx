@@ -9,10 +9,12 @@ import {
   PenLine,
   Trash2,
   CircleAlert,
+  Gauge,
   Lock,
 } from 'lucide-react'
 import { db } from '../db/base'
-import { adresseCourte, infosManquantes, nomsLocataires, progressionGlobale, normaliser, progressionPiece, supprimerEdl } from '../db/edl'
+import type { Edl } from '../db/types'
+import { adresseCourte, compteurFait, infosManquantes, nomsLocataires, progressionGlobale, normaliser, progressionPiece, supprimerEdl } from '../db/edl'
 import { LIBELLE_ACTE, LIBELLE_BIEN, formatDate } from '../libelles'
 import { Badge, BarreProgression, Confirmation, Section } from '../components/ui'
 import Chargement from '../components/Chargement'
@@ -78,6 +80,10 @@ export default function TableauDeBord() {
           </p>
         </div>
       </div>
+
+      {edl.statut !== 'signe' && (
+        <Rappels edl={edl} onOuvrir={(chemin) => navigate(`/edl/${edl.id}/${chemin}`)} />
+      )}
 
       <Section titre="Informations générales">
         <button className={`carte tuile-ligne ${manque.length === 0 ? 'tuile-ligne-ok' : ''}`} onClick={() => navigate(`/edl/${edl.id}/infos`)}>
@@ -147,5 +153,29 @@ export default function TableauDeBord() {
         }}
       />
     </>
+  )
+}
+
+/** Rappels visibles tant que l'état des lieux n'est pas signé. */
+function Rappels({ edl, onOuvrir }: { edl: Edl; onOuvrir: (chemin: string) => void }) {
+  const compteurs = (edl.compteurs ?? []).filter((c) => !compteurFait(c))
+  if (!compteurs.length && edl.typeActe !== 'a_definir') return null
+  return (
+    <div className="rappels">
+      {edl.typeActe === 'a_definir' && (
+        <button className="carte rappel" onClick={() => onOuvrir('infos')}>
+          <CircleAlert size={20} /> <span>Type d'état des lieux à définir (entrée, sortie…)</span> <ChevronRight size={18} />
+        </button>
+      )}
+      {compteurs.length > 0 && (
+        <button className="carte rappel" onClick={() => onOuvrir('compteurs')}>
+          <Gauge size={20} />
+          <span>
+            Relevés à effectuer : {compteurs.map((c) => c.libelle).join(', ')}
+          </span>
+          <ChevronRight size={18} />
+        </button>
+      )}
+    </div>
   )
 }

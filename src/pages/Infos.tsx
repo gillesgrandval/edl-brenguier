@@ -130,6 +130,7 @@ function EtapeType({ edl, modifier }: Props) {
   return (
     <>
       <Section titre="Type d'état des lieux">
+        {edl.typeActe === 'a_definir' && <p className="attention" style={{ marginTop: 0 }}>Type encore à définir : choisissez-le ci-dessous (obligatoire avant la signature).</p>}
         <Tuiles<TypeActe>
           valeur={edl.typeActe}
           onChange={(v) => modifier((e) => void (e.typeActe = v))}
@@ -358,7 +359,15 @@ function EtapeEnergies({ edl, modifier }: Props) {
     <>
       <Section titre="Date et heure de la visite">
         <div className="grille">
-          <Champ type="datetime-local" label="Date et heure" valeur={edl.dateVisite} onChange={(v) => modifier((e) => void (e.dateVisite = v))} />
+          {/* Date et heure séparées : un état des lieux peut être préparé avant que l'heure soit fixée. */}
+          <Champ type="date" label="Date de la visite" valeur={edl.dateVisite.slice(0, 10)} onChange={(v) => v && modifier((e) => void (e.dateVisite = v + e.dateVisite.slice(10)))} />
+          <Champ
+            type="time"
+            label="Heure"
+            valeur={edl.dateVisite.slice(11, 16)}
+            onChange={(v) => modifier((e) => void (e.dateVisite = e.dateVisite.slice(0, 10) + (v ? `T${v}` : '')))}
+            aide={edl.dateVisite.length <= 10 ? 'À fixer' : undefined}
+          />
         </div>
       </Section>
       <Section titre="Chauffage">

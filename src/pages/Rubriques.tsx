@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { AlarmSmoke, ArrowLeft, Camera, Check, CircleAlert, Gauge, KeyRound, MessageSquareText, Plus, ScanLine, Trash2, Wrench } from 'lucide-react'
 import { useEdl } from '../hooks/useEdl'
 import { nouvelId } from '../db/base'
-import { compteurFait } from '../db/edl'
+import { compteurFait, maintenantLocal } from '../db/edl'
 import type { Edl, Fonctionnement, ReleveCompteur, TypeCompteur } from '../db/types'
 import { enregistrerPhoto, supprimerPhotos } from '../photos/traitement'
 import { Champ, Compteur, Interrupteur, Tuiles, Verrou } from '../components/ui'
@@ -97,6 +97,12 @@ const NUMERO: Record<TypeCompteur, string> = {
   eau_chaude: 'N° de compteur',
   autre: 'N° de compteur',
 }
+/** Saisie d'un index : la date du relevé est notée automatiquement (modifiable). */
+function indexSaisi(x: ReleveCompteur, champ: 'index' | 'indexHC', v: string) {
+  x[champ] = v
+  if (v.trim() && !x.dateReleve) x.dateReleve = maintenantLocal()
+}
+
 const UNITE: Record<TypeCompteur, string> = { electricite: 'kWh', gaz: 'm³', eau_froide: 'm³', eau_chaude: 'm³', autre: '' }
 
 export function Compteurs() {
@@ -136,7 +142,7 @@ export function Compteurs() {
             {c.nonApplicable ? (
               <span className="statut-rubrique statut-ok">Sans objet</span>
             ) : (
-              <Statut ok={compteurFait(c)} texteOk="Relevé" texteAttente={c.index?.trim() ? 'Photo manquante' : 'À relever'} />
+              <Statut ok={compteurFait(c)} texteOk="Relevé" texteAttente={c.index?.trim() ? 'Photo manquante' : 'À effectuer'} />
             )}
           </div>
           <Interrupteur libelle="Pas de compteur / sans objet" valeur={!!c.nonApplicable} onChange={(v) => maj(c.id, (x) => void (x.nonApplicable = v || undefined))} />
@@ -147,10 +153,17 @@ export function Compteurs() {
                 <Champ
                   label={c.type === 'electricite' ? `Index HP / base (${UNITE[c.type]})` : `Index${UNITE[c.type] ? ` (${UNITE[c.type]})` : ''}`}
                   valeur={c.index}
-                  onChange={(v) => maj(c.id, (x) => void (x.index = v))}
+                  onChange={(v) => maj(c.id, (x) => indexSaisi(x, 'index', v))}
                   inputMode="decimal"
                 />
-                {c.type === 'electricite' && <Champ label="Index HC (kWh)" valeur={c.indexHC} onChange={(v) => maj(c.id, (x) => void (x.indexHC = v))} inputMode="decimal" aide="Heures creuses, si double tarif" />}
+                <Champ
+                  type="datetime-local"
+                  label="Date du relevé"
+                  valeur={c.dateReleve}
+                  onChange={(v) => maj(c.id, (x) => void (x.dateReleve = v || undefined))}
+                  aide={c.dateReleve ? undefined : 'Remplie automatiquement à la saisie de l’index'}
+                />
+                {c.type === 'electricite' && <Champ label="Index HC (kWh)" valeur={c.indexHC} onChange={(v) => maj(c.id, (x) => indexSaisi(x, 'indexHC', v))} inputMode="decimal" aide="Heures creuses, si double tarif" />}
               </div>
               <div className="bloc">
                 <div className="bloc-titre">
@@ -206,7 +219,7 @@ export function Compteurs() {
           compteur={liste.find((c) => c.id === lecteur.compteurId)!}
           onFermer={() => setLecteur(null)}
           onValider={(champ, valeur) => {
-            maj(lecteur.compteurId, (x) => void (x[champ] = valeur))
+            maj(lecteur.compteurId, (x) => indexSaisi(x, champ, valeur))
             setLecteur(null)
           }}
         />
