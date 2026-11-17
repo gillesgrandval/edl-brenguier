@@ -4,7 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { Plus, Search, ChevronRight, HardDrive, CloudOff, ShieldCheck, ClipboardList, X, FileUp, CalendarClock, Gauge } from 'lucide-react'
 import { ICONE_BIEN } from '../components/icones'
 import { db, demanderStockagePersistant } from '../db/base'
-import { adresseCourte, compteurFait, creerEdl, nomsLocataires, progressionGlobale } from '../db/edl'
+import { adresseCourte, compteurFait, nomsLocataires, progressionGlobale } from '../db/edl'
 import { importerPreparation } from '../db/patrimoine'
 import type { Edl, Statut, TypeActe, TypeBien } from '../db/types'
 import { LIBELLE_ACTE, LIBELLE_BIEN, LIBELLE_STATUT, formatDate } from '../libelles'
@@ -19,7 +19,6 @@ export default function Accueil() {
   const [statut, setStatut] = useState<Filtre<Statut>>('tous')
   const [acte, setActe] = useState<Filtre<TypeActe>>('tous')
   const [bien, setBien] = useState<Filtre<TypeBien>>('tous')
-  const [creation, setCreation] = useState(false)
 
   const filtres = useMemo(() => {
     const q = recherche.trim().toLowerCase()
@@ -33,13 +32,8 @@ export default function Accueil() {
     })
   }, [edls, recherche, statut, acte, bien])
 
-  async function nouveau() {
-    if (creation) return
-    setCreation(true)
-    await demanderStockagePersistant()
-    const id = await creerEdl()
-    navigate(`/edl/${id}/infos`)
-  }
+  // Nouvel état des lieux : choix d'un bien du patrimoine (ou saisie d'un nouveau bien).
+  const nouveau = () => navigate('/nouveau')
 
   const total = edls?.length ?? 0
   const enCours = edls?.filter((e) => e.statut !== 'signe').length ?? 0
@@ -82,7 +76,7 @@ export default function Accueil() {
           </p>
         </div>
         <div className="accueil-actions">
-          <button className="bouton bouton-principal bouton-xl" onClick={nouveau} disabled={creation}>
+          <button className="bouton bouton-principal bouton-xl" onClick={nouveau}>
             <Plus size={24} /> Nouvel état des lieux
           </button>
           <button className="bouton bouton-discret" onClick={() => fichier.current?.click()}>

@@ -6,6 +6,7 @@ import Infos from './pages/Infos'
 import TableauDeBord from './pages/TableauDeBord'
 import Piece from './pages/Piece'
 import Signature from './pages/Signature'
+import ChoixBien from './pages/ChoixBien'
 import { Cles, Compteurs, Detecteur, Observations } from './pages/Rubriques'
 import MiseAJour from './components/MiseAJour'
 import { useEnLigne } from './hooks/useEnLigne'
@@ -37,6 +38,7 @@ export default function App() {
       <main className="contenu">
         <Routes>
           <Route path="/" element={<Accueil />} />
+          <Route path="/nouveau" element={<ChoixBien />} />
           <Route path="/edl/:id" element={<TableauDeBord />} />
           <Route path="/edl/:id/infos" element={<Infos />} />
           <Route path="/edl/:id/piece/:pieceId" element={<Piece />} />

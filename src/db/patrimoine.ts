@@ -130,3 +130,31 @@ export async function importerPreparation(contenu: unknown): Promise<ResultatImp
   }
   return r
 }
+
+// --- Biens intégrés à l'application -------------------------------------
+
+let installation: Promise<void> | null = null
+
+/**
+ * Ajoute à la base de l'appareil les biens intégrés à l'application (s'ils n'y sont pas déjà)
+ * et prépare une seule fois les visites prévues. Une fiche déjà présente n'est jamais écrasée,
+ * et un état des lieux supprimé par l'utilisateur n'est pas recréé.
+ */
+export function installerPatrimoineIntegre(): Promise<void> {
+  installation ??= (async () => {
+    const { BIENS_INTEGRES, VISITES_INTEGREES } = await import('../patrimoine/biensIntegres')
+    for (const b of BIENS_INTEGRES) if (!(await db.biens.get(b.id))) await db.biens.add(b)
+    for (const v of VISITES_INTEGREES) {
+      if (await db.meta.get(v.cle)) continue
+      const bien = await db.biens.get(v.bienId)
+      if (!bien) continue
+      const deja = (await db.edls.where('bienId').equals(v.bienId).toArray()).some((e) => e.dateVisite.slice(0, 10) === v.date)
+      if (!deja) await creerEdlDepuisBien(bien, v.date)
+      await db.meta.put({ cle: v.cle, valeur: new Date().toISOString() })
+    }
+  })().catch((e) => {
+    installation = null
+    console.error('Patrimoine intégré :', e)
+  })
+  return installation
+}

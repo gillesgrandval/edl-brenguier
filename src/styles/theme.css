@@ -725,3 +725,18 @@ textarea.saisie { resize: vertical; }
 .rappels { display: grid; gap: 10px; margin: 16px 0; }
 .rappel { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; font: inherit; font-weight: 700; color: #9a6400; background: #fdf8ee; border-color: #f0dcb0; cursor: pointer; }
 .rappel span { flex: 1; }
+
+/* Choix du bien (nouvel état des lieux) */
+.cascade { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 16px; }
+.cascade select.saisie { appearance: auto; }
+.resultats-biens { display: grid; gap: 8px; margin-top: 10px; }
+.resultat-bien { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 52px; padding: 8px 12px; text-align: left; font: inherit; background: var(--fond); border: 1px solid var(--trait); border-radius: 10px; color: var(--texte); cursor: pointer; }
+.resultat-bien span { flex: 1; }
+.fiche-bien { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--trait); display: flex; flex-direction: column; gap: 10px; }
+.fiche-bien-titre { display: flex; gap: 12px; align-items: center; }
+.fiche-bien-titre > svg { color: var(--bronze); flex: none; }
+.fiche-bien-titre div { display: flex; flex-direction: column; }
+.fiche-bien-details { margin: 0; padding-left: 20px; color: var(--texte-doux); display: grid; gap: 4px; }
+.fiche-bien-historique { display: grid; gap: 8px; }
+.fiche-bien-historique strong { display: flex; align-items: center; gap: 6px; }
+input[type="search"]::-webkit-search-cancel-button { display: none; }
