@@ -47,13 +47,19 @@ export async function creerEdl(): Promise<string> {
 }
 
 export async function enregistrerEdl(edl: Edl): Promise<void> {
-  await db.edls.put({ ...edl, modifieLe: new Date().toISOString() })
+  await db.transaction('rw', db.edls, async () => {
+    // Filet de sécurité : un état des lieux signé n'est jamais réécrit (sauvegarde différée, autre écran…).
+    const actuel = await db.edls.get(edl.id)
+    if (actuel?.statut === 'signe') return
+    await db.edls.put({ ...edl, modifieLe: new Date().toISOString() })
+  })
 }
 
 /** Supprime un état des lieux et toutes ses photos. */
 export async function supprimerEdl(id: string): Promise<void> {
-  await db.transaction('rw', db.edls, db.photos, async () => {
+  await db.transaction('rw', db.edls, db.photos, db.signatures, async () => {
     await db.photos.where('edlId').equals(id).delete()
+    await db.signatures.where('edlId').equals(id).delete()
     await db.edls.delete(id)
   })
 }
@@ -155,7 +161,7 @@ export function adresseCourte(edl: Edl): string {
 export async function majEdl(id: string, recette: (e: Edl) => void): Promise<void> {
   await db.transaction('rw', db.edls, async () => {
     const e = await db.edls.get(id)
-    if (!e) return
+    if (!e || e.statut === 'signe') return
     recette(e)
     e.modifieLe = new Date().toISOString()
     await db.edls.put(e)

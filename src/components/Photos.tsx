@@ -1,9 +1,13 @@
-import { useEffect, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Camera, ImagePlus, Loader2, PenTool, Trash2, X } from 'lucide-react'
 import { db } from '../db/base'
 import { formatDate } from '../libelles'
 import Annotateur from './Annotateur'
+
+/** Lecture seule (état des lieux signé) : on consulte les photos sans pouvoir les modifier. */
+export const LectureSeule = createContext(false)
 
 /** Adresse d'affichage d'une photo enregistrée ; suit les modifications (annotations). */
 function usePhotoUrl(id: string, version: 'miniature' | 'image') {
@@ -28,11 +32,13 @@ function usePhotoUrl(id: string, version: 'miniature' | 'image') {
 export function BoutonsPhoto(props: { onFichiers: (f: File[]) => void; enCours: number; compact?: boolean }) {
   const camera = useRef<HTMLInputElement>(null)
   const galerie = useRef<HTMLInputElement>(null)
+  const verrou = useContext(LectureSeule)
   const recevoir = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = Array.from(e.target.files ?? [])
     e.target.value = '' // permet de reprendre la même photo
     if (f.length) props.onFichiers(f)
   }
+  if (verrou) return null // état des lieux signé : plus de nouvelles photos
   return (
     <div className="boutons-photo">
       <input ref={camera} type="file" accept="image/*" capture="environment" hidden onChange={recevoir} />
@@ -55,7 +61,8 @@ function Miniature({ id, onClick }: { id: string; onClick: () => void }) {
     return p ? { numero: p.numero, annotee: !!p.annotations?.length } : undefined
   }, [id])
   return (
-    <button type="button" className="miniature" onClick={onClick}>
+    // div (et non button) : reste consultable dans une zone verrouillée (fieldset désactivé).
+    <div role="button" tabIndex={0} className="miniature" onClick={onClick} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onClick()}>
       {url ? <img src={url} alt={`Photo ${infos?.numero ?? ''}`} /> : <span className="miniature-vide" />}
       {infos && <span className="miniature-numero">{infos.numero}</span>}
       {infos?.annotee && (
@@ -63,12 +70,13 @@ function Miniature({ id, onClick }: { id: string; onClick: () => void }) {
           <PenTool size={13} />
         </span>
       )}
-    </button>
+    </div>
   )
 }
 
 export function GaleriePhotos(props: { ids: string[]; onSupprimer: (id: string) => void; lectureSeule?: boolean }) {
   const [ouverte, setOuverte] = useState<string | null>(null)
+  const verrou = useContext(LectureSeule)
   if (props.ids.length === 0) return null
   return (
     <>
@@ -77,17 +85,19 @@ export function GaleriePhotos(props: { ids: string[]; onSupprimer: (id: string) 
           <Miniature key={id} id={id} onClick={() => setOuverte(id)} />
         ))}
       </div>
-      {ouverte && (
+      {ouverte &&
+        createPortal(
         <Visionneuse
           id={ouverte}
-          lectureSeule={props.lectureSeule}
+          lectureSeule={props.lectureSeule || verrou}
           onFermer={() => setOuverte(null)}
           onSupprimer={() => {
             props.onSupprimer(ouverte)
             setOuverte(null)
           }}
-        />
-      )}
+        />,
+          document.body,
+        )}
     </>
   )
 }

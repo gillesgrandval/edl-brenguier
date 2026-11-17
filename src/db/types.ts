@@ -134,6 +134,45 @@ export interface Edl {
   detecteur?: Detecteur
   /** Sortie : date de restitution des clés. */
   dateRestitutionCles?: string
+
+  // Clôture (étape 6)
+  /** Lieu de signature (par défaut, la ville du bien). */
+  lieuSignature?: string
+  /** Personnes appelées à signer, figées au moment de la signature. */
+  signataires?: Signataire[]
+  /** Renseignée à la signature : plus aucune modification n'est possible ensuite. */
+  cloture?: Cloture
+}
+
+export interface Signataire {
+  id: string
+  role: 'bailleur' | 'locataire'
+  /** Identifiant du locataire (Personne) concerné. */
+  personneId?: string
+  nom: string
+  /** Ex. « Gestionnaire, pour SCI … ». */
+  qualite?: string
+  /** Image de la signature (table « signatures »). */
+  signatureId?: string
+  /** Absent ou refus de signer : la mention figure au rapport. */
+  absent?: boolean
+  motifAbsence?: string
+}
+
+export interface Cloture {
+  /** Date et heure de signature (ISO). */
+  signeLe: string
+  /** Empreinte SHA-256 du contenu, des photos et des signatures. */
+  empreinte: string
+  versionApp: string
+}
+
+/** Signature manuscrite tracée au doigt (PNG). */
+export interface SignatureImage {
+  id: string
+  edlId: string
+  image: Blob
+  traceeLe: string
 }
 
 export type TypeCompteur = 'electricite' | 'gaz' | 'eau_froide' | 'eau_chaude' | 'autre'

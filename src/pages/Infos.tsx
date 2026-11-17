@@ -25,7 +25,7 @@ import { enregistrerEdl, infosManquantes } from '../db/edl'
 import type { Edl, Energie, ModeEnergie, TypeActe, TypeBien } from '../db/types'
 import { ANNEXES, ENERGIES } from '../libelles'
 import { creerInventaire, creerPieces, modelesPour, quantitesParDefaut } from '../modeles/pieces'
-import { Champ, Compteur, Interrupteur, Puces, Section, Tuiles, ZoneTexte } from '../components/ui'
+import { Champ, Compteur, Interrupteur, Puces, Section, Tuiles, Verrou, ZoneTexte } from '../components/ui'
 import Chargement from '../components/Chargement'
 
 const ETAPES = ['Type', 'Le bien', 'Les parties', 'Date et énergies', 'Pièces'] as const
@@ -92,6 +92,7 @@ export default function Infos() {
         ))}
       </ol>
 
+      <Verrou actif={edl.statut === 'signe'} signeLe={edl.cloture?.signeLe}>
       <div className="assistant-corps">
         {etape === 0 && <EtapeType edl={edl} modifier={modifier} />}
         {etape === 1 && <EtapeBien edl={edl} modifier={modifier} />}
@@ -99,6 +100,7 @@ export default function Infos() {
         {etape === 3 && <EtapeEnergies edl={edl} modifier={modifier} />}
         {etape === 4 && creation && <EtapePieces bien={edl.typeBien} quantites={qte} onChange={setQuantites} />}
       </div>
+      </Verrou>
 
       {derniere && <RappelManquants edl={edl} />}
 

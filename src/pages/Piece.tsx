@@ -14,8 +14,7 @@ import {
   Plus,
   Sparkles,
   Trash2,
-  Wrench,
-} from 'lucide-react'
+  Wrench, Lock } from 'lucide-react'
 import { useEdl } from '../hooks/useEdl'
 import { nouvelId } from '../db/base'
 import { progressionPiece } from '../db/edl'
@@ -24,7 +23,7 @@ import { ETATS } from '../libelles'
 import { LIBELLE_CATEGORIE, LOCALISATIONS, NATURES, OBSERVATIONS } from '../modeles/listes'
 import { enregistrerPhoto, supprimerPhotos } from '../photos/traitement'
 import { BarreProgression, Champ, Compteur, Confirmation, Interrupteur, Puces } from '../components/ui'
-import { BoutonsPhoto, GaleriePhotos } from '../components/Photos'
+import { BoutonsPhoto, GaleriePhotos, LectureSeule } from '../components/Photos'
 import { BoutonDictee } from '../components/Dictee'
 import Chargement from '../components/Chargement'
 import MemoPiece from '../components/MemoPiece'
@@ -150,6 +149,7 @@ export default function Piece() {
   }
 
   return (
+    <LectureSeule.Provider value={verrouille}>
     <div className="saisie-piece">
       {/* --- En-tête collant --- */}
       <div className="piece-entete">
@@ -182,6 +182,11 @@ export default function Piece() {
         </div>
       </div>
 
+      {verrouille && (
+        <div className="bandeau-signe">
+          <Lock size={18} /> Signé — consultation seule, aucune modification possible.
+        </div>
+      )}
       {!verrouille && (
         <div className="actions-rapides">
           <button className="bouton bouton-accent bouton-dicter" onClick={() => setMemo(true)}>
@@ -315,6 +320,7 @@ export default function Piece() {
         />
       )}
     </div>
+    </LectureSeule.Provider>
   )
 }
 

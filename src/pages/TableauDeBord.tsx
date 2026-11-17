@@ -10,6 +10,8 @@ import {
   Trash2,
   Info,
   CircleAlert,
+  FileText,
+  Lock,
 } from 'lucide-react'
 import { db } from '../db/base'
 import { adresseCourte, infosManquantes, nomsLocataires, progressionGlobale, normaliser, progressionPiece, supprimerEdl } from '../db/edl'
@@ -102,8 +104,20 @@ export default function TableauDeBord() {
       <BlocRubriques edl={edl} />
 
       <Section titre="Clôture">
-        <div className="grille-pieces">
-          <TuileAVenir icone={<PenLine />} nom="Signatures et rapport PDF" etape={6} />
+        <button className={`carte tuile-ligne ${edl.statut === 'signe' ? 'tuile-ligne-ok' : ''}`} onClick={() => navigate(`/edl/${edl.id}/signature`)}>
+          <span className="tuile-ligne-icone">{edl.statut === 'signe' ? <Lock size={22} /> : <PenLine size={22} />}</span>
+          <span className="tuile-ligne-texte">
+            <strong>{edl.statut === 'signe' ? 'Signé et verrouillé' : 'Récapitulatif et signatures'}</strong>
+            <span className="texte-doux">
+              {edl.statut === 'signe' && edl.cloture
+                ? `Le ${formatDate(edl.cloture.signeLe, true)} · empreinte ${edl.cloture.empreinte.slice(0, 8)}…`
+                : 'Vérifier, faire signer les parties, puis verrouiller'}
+            </span>
+          </span>
+          <ChevronRight />
+        </button>
+        <div className="grille-pieces" style={{ marginTop: 12 }}>
+          <TuileAVenir icone={<FileText />} nom="Rapport PDF" etape={7} />
         </div>
       </Section>
 

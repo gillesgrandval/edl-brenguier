@@ -58,7 +58,8 @@ export function useEdl(id: string | undefined) {
   /** Modifie l'état des lieux : la « recette » reçoit une copie à modifier librement. */
   const modifier = useCallback(
     (recette: (brouillon: Edl) => void) => {
-      if (!courant.current) return
+      // Un état des lieux signé ne se modifie plus.
+      if (!courant.current || courant.current.statut === 'signe') return
       const copie = structuredClone(courant.current)
       recette(copie)
       courant.current = copie

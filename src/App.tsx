@@ -5,6 +5,7 @@ import Accueil from './pages/Accueil'
 import Infos from './pages/Infos'
 import TableauDeBord from './pages/TableauDeBord'
 import Piece from './pages/Piece'
+import Signature from './pages/Signature'
 import { Cles, Compteurs, Detecteur, Observations } from './pages/Rubriques'
 import MiseAJour from './components/MiseAJour'
 import { useEnLigne } from './hooks/useEnLigne'
@@ -43,6 +44,7 @@ export default function App() {
           <Route path="/edl/:id/cles" element={<Cles />} />
           <Route path="/edl/:id/detecteur" element={<Detecteur />} />
           <Route path="/edl/:id/observations" element={<Observations />} />
+          <Route path="/edl/:id/signature" element={<Signature />} />
           <Route path="*" element={<Accueil />} />
         </Routes>
       </main>

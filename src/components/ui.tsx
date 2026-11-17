@@ -1,5 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react'
-import { Check, Minus, Plus } from 'lucide-react'
+import { Check, Lock, Minus, Plus } from 'lucide-react'
+import { LectureSeule } from './Photos'
+import { formatDate } from '../libelles'
 
 /* Petits composants réutilisés dans toute l'application.
    Tous respectent une zone tactile d'au moins 56 px. */
@@ -181,5 +183,23 @@ export function Section(props: { titre: string; children: ReactNode; action?: Re
       </div>
       {props.children}
     </section>
+  )
+}
+
+/**
+ * Zone verrouillée une fois l'état des lieux signé : tout est en lecture seule
+ * (les photos restent consultables).
+ */
+export function Verrou(props: { signeLe?: string; actif: boolean; children: ReactNode }) {
+  if (!props.actif) return <>{props.children}</>
+  return (
+    <LectureSeule.Provider value={true}>
+      <div className="bandeau-signe">
+        <Lock size={18} /> Signé{props.signeLe ? ` le ${formatDate(props.signeLe, true)}` : ''} — consultation seule, aucune modification possible.
+      </div>
+      <fieldset className="verrou" disabled>
+        {props.children}
+      </fieldset>
+    </LectureSeule.Provider>
   )
 }

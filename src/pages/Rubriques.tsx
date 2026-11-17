@@ -6,7 +6,7 @@ import { nouvelId } from '../db/base'
 import { compteurFait } from '../db/edl'
 import type { Edl, Fonctionnement, ReleveCompteur, TypeCompteur } from '../db/types'
 import { enregistrerPhoto, supprimerPhotos } from '../photos/traitement'
-import { Champ, Compteur, Interrupteur, Tuiles } from '../components/ui'
+import { Champ, Compteur, Interrupteur, Tuiles, Verrou } from '../components/ui'
 import { BoutonsPhoto, GaleriePhotos } from '../components/Photos'
 import { BoutonDictee } from '../components/Dictee'
 import Chargement from '../components/Chargement'
@@ -120,6 +120,7 @@ export function Compteurs() {
           {faits}/{liste.length} relevés
         </span>
       </Entete>
+      <Verrou actif={edl.statut === 'signe'} signeLe={edl.cloture?.signeLe}>
       <p className="texte-doux" style={{ marginTop: 0 }}>
         Pour chaque compteur : numéro, index et <strong>photo de l'index</strong> (obligatoire pour valider). Indiquez « Pas de compteur » s'il n'existe pas.
       </p>
@@ -167,7 +168,7 @@ export function Compteurs() {
                     if (derniere) setLecteur({ photoId: derniere, compteurId: c.id })
                   }}
                 />
-                {c.photoIds.length > 0 && (
+                {c.photoIds.length > 0 && edl.statut !== 'signe' && (
                   <button className="bouton bouton-discret bouton-lire" onClick={() => setLecteur({ photoId: c.photoIds[c.photoIds.length - 1], compteurId: c.id })}>
                     <ScanLine size={20} /> Lire l'index sur la photo
                   </button>
@@ -217,6 +218,7 @@ export function Compteurs() {
       >
         <Plus size={20} /> Ajouter un compteur (sous-compteur, compteur d'eau divisionnaire…)
       </button>
+      </Verrou>
     </div>
   )
 }
@@ -245,6 +247,7 @@ export function Cles() {
           {total} remis{total > 1 ? 'es' : 'e'}
         </span>
       </Entete>
+      <Verrou actif={edl.statut === 'signe'} signeLe={edl.cloture?.signeLe}>
 
       {edl.typeActe === 'sortie' && (
         <section className="carte rubrique-carte">
@@ -309,6 +312,7 @@ export function Cles() {
           }
         />
       </section>
+      </Verrou>
     </div>
   )
 }
@@ -335,6 +339,7 @@ export function Detecteur() {
       <Entete titre="Détecteur de fumée" icone={<AlarmSmoke size={24} />} edl={edl} sauvegarde={r.sauvegarde}>
         <Statut ok={fait} texteOk="Renseigné" texteAttente="À renseigner" />
       </Entete>
+      <Verrou actif={edl.statut === 'signe'} signeLe={edl.cloture?.signeLe}>
       <section className="carte rubrique-carte">
         <div className="bloc-titre">Présence</div>
         <Tuiles<'oui' | 'non'>
@@ -381,6 +386,7 @@ export function Detecteur() {
         </div>
         <Commentaire label="Commentaire" valeur={d.commentaire} placeholder="Emplacement, date de la pile…" onChange={(v) => maj((x) => void (x.commentaire = v || undefined))} />
       </section>
+      </Verrou>
     </div>
   )
 }
@@ -398,6 +404,7 @@ export function Observations() {
   return (
     <div className="saisie-piece">
       <Entete titre="Observations générales" icone={<MessageSquareText size={24} />} edl={edl} sauvegarde={r.sauvegarde} />
+      <Verrou actif={edl.statut === 'signe'} signeLe={edl.cloture?.signeLe}>
       <section className="carte rubrique-carte">
         <Commentaire
           label="Observations de l'opérateur"
@@ -414,6 +421,7 @@ export function Observations() {
           onChange={(v) => modifier((e) => void (e.remarquesLocataire = v || undefined))}
         />
       </section>
+      </Verrou>
     </div>
   )
 }
