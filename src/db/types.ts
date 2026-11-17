@@ -123,6 +123,8 @@ export interface Edl {
   edlEntreeId?: string
   /** Bien du patrimoine dont cet état des lieux est issu (identifiant permanent). */
   bienId?: string
+  /** Sortie : chiffrage des dégradations, par identifiant d'élément (même identifiant qu'à l'entrée). */
+  degradations?: Record<string, Degradation>
 
   chauffage: Energie
   eauChaude: Energie & { idemChauffage?: boolean }
@@ -145,6 +147,17 @@ export interface Edl {
   signataires?: Signataire[]
   /** Renseignée à la signature : plus aucune modification n'est possible ensuite. */
   cloture?: Cloture
+}
+
+/** Chiffrage d'une dégradation constatée à la sortie. */
+export interface Degradation {
+  /** Imputable au locataire (par défaut : oui si l'état s'est dégradé). */
+  imputable: boolean
+  /** Date de pose ou de dernière rénovation (AAAA-MM-JJ) ; à défaut, date de l'entrée. */
+  depuis?: string
+  /** Coût de remise en état TTC (euros). */
+  cout?: number
+  commentaire?: string
 }
 
 export interface Signataire {

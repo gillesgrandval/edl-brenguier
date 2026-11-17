@@ -10,6 +10,7 @@ import ChoixBien from './pages/ChoixBien'
 import Patrimoine from './pages/Patrimoine'
 import FicheBien from './pages/FicheBien'
 import ImportExcel from './pages/ImportExcel'
+import Comparatif from './pages/Comparatif'
 import { Cles, Compteurs, Detecteur, Observations } from './pages/Rubriques'
 import MiseAJour from './components/MiseAJour'
 import logoSignatureBlanc from './assets/charte/logo-signature-blanc.png'
@@ -59,6 +60,7 @@ export default function App() {
           <Route path="/edl/:id/detecteur" element={<Detecteur />} />
           <Route path="/edl/:id/observations" element={<Observations />} />
           <Route path="/edl/:id/signature" element={<Signature />} />
+          <Route path="/edl/:id/comparatif" element={<Comparatif />} />
           <Route path="*" element={<Accueil />} />
         </Routes>
       </main>

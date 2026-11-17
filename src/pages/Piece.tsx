@@ -16,7 +16,9 @@ import {
   Trash2,
   Wrench, Lock } from 'lucide-react'
 import { useEdl } from '../hooks/useEdl'
-import { nouvelId } from '../db/base'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { elementsParId, evolution } from '../db/sortie'
+import { db, nouvelId } from '../db/base'
 import { progressionPiece } from '../db/edl'
 import type { Categorie, Element, Etat, Fonctionnement, Piece as TPiece } from '../db/types'
 import { ETATS } from '../libelles'
@@ -64,6 +66,10 @@ export default function Piece() {
     const t = window.setTimeout(() => refs.current[ouvert]?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
     return () => window.clearTimeout(t)
   }, [ouvert])
+
+  // Sortie : éléments de l'état des lieux d'entrée, pour comparer sur place.
+  const idEntree = edl?.edlEntreeId
+  const entree = useLiveQuery(async () => (idEntree ? elementsParId(await db.edls.get(idEntree)) : null), [idEntree])
 
   if (edl === undefined) return <Chargement />
   if (!edl || !piece) return <Chargement introuvable />
@@ -218,6 +224,7 @@ export default function Piece() {
           <div key={el.id} ref={(n) => void (refs.current[el.id] = n)} className="ancre-element">
             <CarteElement
               element={el}
+              entree={entree === null || entree === undefined ? undefined : (entree.get(el.id) ?? null)}
               ouvert={ouvert === el.id}
               verrouille={verrouille}
               onBasculer={() => setOuvert(ouvert === el.id ? null : el.id)}
@@ -330,6 +337,8 @@ export default function Piece() {
 
 function CarteElement(props: {
   element: Element
+  /** Sortie : élément à l'entrée (null = élément ajouté depuis l'entrée ; undefined = pas une sortie). */
+  entree?: Element | null
   ouvert: boolean
   verrouille: boolean
   onBasculer: () => void
@@ -365,6 +374,7 @@ function CarteElement(props: {
             </span>
           )}
         </span>
+        {props.entree !== undefined && <PastilleEntree entree={props.entree} sortie={el} />}
         {el.photoIds.length > 0 && (
           <span className="compte-photos">
             <Camera size={15} /> {el.photoIds.length}
@@ -375,6 +385,7 @@ function CarteElement(props: {
 
       {props.ouvert && (
         <fieldset className="carte-element-corps" disabled={props.verrouille}>
+          {props.entree && <RappelEntree entree={props.entree} />}
           {/* État */}
           <div className="bloc">
             <div className="bloc-titre">État</div>
@@ -539,5 +550,31 @@ function AjoutElement(props: { onAnnuler: () => void; onAjouter: (libelle: strin
         </button>
       </div>
     </dialog>
+  )
+}
+
+/** Sortie : rappel de l'état d'entrée dans l'en-tête de l'élément, et alerte si l'état s'est dégradé. */
+function PastilleEntree({ entree, sortie }: { entree: Element | null; sortie: Element }) {
+  if (entree === null) return <span className="pastille-entree pastille-nouveau">Nouveau</span>
+  const e = ETATS.find((x) => x.cle === entree.etat)
+  const evo = evolution(entree, sortie)
+  return (
+    <span className={`pastille-entree ${evo === 'degradation' ? 'pastille-degradation' : ''}`} title="État à l'entrée">
+      Entrée : {e?.code ?? '—'}
+      {evo === 'degradation' && ' ↘'}
+    </span>
+  )
+}
+
+/** Sortie : ce qui avait été constaté à l'entrée pour cet élément. */
+function RappelEntree({ entree }: { entree: Element }) {
+  const e = ETATS.find((x) => x.cle === entree.etat)
+  const details = [entree.nature, ...entree.observations, entree.localisation, entree.commentaire].filter(Boolean).join(' · ')
+  return (
+    <div className="rappel-entree">
+      <strong>À l'entrée :</strong> {e ? `${e.code} — ${e.libelle}` : 'état non renseigné'}
+      {details && <span> · {details}</span>}
+      {entree.photoIds.length > 0 && <span> · {entree.photoIds.length} photo{entree.photoIds.length > 1 ? 's' : ''} (voir le rapport d'entrée)</span>}
+    </div>
   )
 }

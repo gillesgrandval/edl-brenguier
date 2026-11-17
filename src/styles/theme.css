@@ -795,3 +795,17 @@ input[type="search"]::-webkit-search-cancel-button { display: none; }
 .ligne-erreur { background: var(--erreur-fond); }
 .texte-erreur { color: var(--erreur-texte); display: flex; gap: 4px; align-items: center; }
 .texte-alerte { color: var(--alerte-texte); display: flex; gap: 4px; align-items: center; }
+
+/* Étape 8 : sortie et comparaison */
+.pastille-entree { flex: none; font-size: 13px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--principal-clair); color: var(--principal); white-space: nowrap; }
+.pastille-degradation { background: var(--erreur-fond); color: var(--erreur-texte); }
+.pastille-nouveau { background: var(--accent-clair); color: var(--accent-texte); }
+.rappel-entree { background: var(--principal-clair); border-left: 4px solid var(--principal); border-radius: 8px; padding: 10px 12px; font-size: 16px; margin-bottom: 12px; }
+.note-vetuste { display: block; margin-top: 0; }
+.ligne-degradation { margin-bottom: 12px; display: grid; gap: 10px; }
+.ligne-degradation-titre { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.ligne-degradation-titre > div { display: flex; flex-direction: column; }
+.calcul-vetuste { display: flex; flex-wrap: wrap; gap: 8px 18px; background: var(--fond); border-radius: 10px; padding: 10px 14px; }
+.calcul-montant { color: var(--principal); }
+.total-degradations { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 19px; border-color: var(--principal); }
+.total-degradations strong { font-size: 24px; color: var(--principal); }

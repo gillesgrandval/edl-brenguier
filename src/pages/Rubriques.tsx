@@ -2,8 +2,10 @@ import { useState, type ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AlarmSmoke, ArrowLeft, Camera, Check, CircleAlert, Gauge, KeyRound, MessageSquareText, Plus, ScanLine, Trash2, Wrench } from 'lucide-react'
 import { useEdl } from '../hooks/useEdl'
-import { nouvelId } from '../db/base'
+import { db, nouvelId } from '../db/base'
 import { compteurFait, maintenantLocal } from '../db/edl'
+import { consommation } from '../db/sortie'
+import { useLiveQuery } from 'dexie-react-hooks'
 import type { Edl, Fonctionnement, ReleveCompteur, TypeCompteur } from '../db/types'
 import { enregistrerPhoto, supprimerPhotos } from '../photos/traitement'
 import { Champ, Compteur, Interrupteur, Tuiles, Verrou } from '../components/ui'
@@ -38,7 +40,10 @@ function useRubrique() {
       setTraitement(0)
     }
   }
-  return { ...ctx, navigate, traitement, photos }
+  // Sortie : état des lieux d'entrée (index des compteurs, clés remises).
+  const idEntree = ctx.edl?.edlEntreeId
+  const entree = useLiveQuery(async () => (idEntree ? ((await db.edls.get(idEntree)) ?? null) : null), [idEntree])
+  return { ...ctx, navigate, traitement, photos, entree }
 }
 
 function Entete(props: { titre: string; icone: ReactNode; edl: Edl; sauvegarde: string; children?: ReactNode }) {
@@ -82,6 +87,22 @@ function Commentaire(props: { label: string; valeur?: string; onChange: (v: stri
         <BoutonDictee onTexte={(t) => props.onChange(props.valeur ? `${props.valeur} ${t}` : t)} />
       </div>
       <textarea className="saisie" rows={props.lignes ?? 2} value={props.valeur ?? ''} placeholder={props.placeholder ?? 'Saisir ou dicter…'} onChange={(e) => props.onChange(e.target.value)} />
+    </div>
+  )
+}
+
+/** Sortie : index relevé à l'entrée et consommation depuis. */
+function RappelIndex({ entree, sortie, unite }: { entree?: ReleveCompteur; sortie: ReleveCompteur; unite: string }) {
+  if (!entree || entree.nonApplicable) return null
+  const conso = consommation(entree.index, sortie.index)
+  const consoHC = consommation(entree.indexHC, sortie.indexHC)
+  return (
+    <div className="rappel-entree" style={{ gridColumn: '1 / -1' }}>
+      <strong>À l'entrée :</strong> {entree.index ? `${entree.index} ${unite}` : 'non relevé'}
+      {entree.indexHC ? ` · HC ${entree.indexHC}` : ''}
+      {conso !== undefined && <> · <strong>Consommation : {conso.toLocaleString('fr-FR')} {unite}</strong></>}
+      {consoHC !== undefined && <> · HC : {consoHC.toLocaleString('fr-FR')} {unite}</>}
+      {conso !== undefined && conso < 0 && <span className="texte-erreur"> Index de sortie inférieur à l'entrée : à vérifier.</span>}
     </div>
   )
 }
@@ -163,6 +184,7 @@ export function Compteurs() {
                   onChange={(v) => maj(c.id, (x) => void (x.dateReleve = v || undefined))}
                   aide={c.dateReleve ? undefined : 'Remplie automatiquement à la saisie de l’index'}
                 />
+                {r.entree && <RappelIndex entree={r.entree.compteurs?.find((x) => x.id === c.id || x.type === c.type)} sortie={c} unite={UNITE[c.type]} />}
                 {c.type === 'electricite' && <Champ label="Index HC (kWh)" valeur={c.indexHC} onChange={(v) => maj(c.id, (x) => indexSaisi(x, 'indexHC', v))} inputMode="decimal" aide="Heures creuses, si double tarif" />}
               </div>
               <div className="bloc">
@@ -275,6 +297,10 @@ export function Cles() {
           <div key={c.id} className="ligne-cle">
             <input className="saisie" value={c.libelle} onChange={(e) => maj(c.id, (x) => void (x.libelle = e.target.value))} aria-label="Désignation" />
             <Compteur valeur={c.nombre} max={50} onChange={(v) => maj(c.id, (x) => void (x.nombre = v))} libelle={c.libelle} />
+            {r.entree && (() => {
+              const remis = r.entree.cles?.find((x) => x.id === c.id)?.nombre
+              return remis !== undefined ? <span className={`pastille-entree ${c.nombre < remis ? 'pastille-degradation' : ''}`}>Remis à l'entrée : {remis}</span> : null
+            })()}
             <button
               className="bouton-icone"
               aria-label="Retirer"

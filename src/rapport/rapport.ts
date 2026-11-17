@@ -20,6 +20,7 @@ import { empreinteLisible } from '../db/cloture'
 import type { Edl, Element, Photo } from '../db/types'
 import { ETATS, LIBELLE_BIEN, formatDate } from '../libelles'
 import { CHARTE, rvb } from '../theme/charte'
+import { comparer, consommation, elementsParId } from '../db/sortie'
 // Charte Groupe Brenguier : logo et police de texte Nunito (licence libre OFL).
 import logoSignature from './ressources/logo-signature-bleu.png?inline'
 import logoIcone from './ressources/logo-icone-bleu.png?inline'
@@ -63,9 +64,9 @@ export function t(s: string | undefined | null): string {
     .replace(/[–—]/g, '-')
     .replace(/œ/g, 'oe')
     .replace(/Œ/g, 'OE')
-    .replace(/€/g, 'EUR')
-    .replace(/[   ]/g, ' ')
-    .replace(/[^\x09\x0a\x0d\x20-\x7e -ÿ]/g, '')
+    .replace(/[\u00a0\u202f\u2009]/g, ' ')
+    // Seuls l'alphabet latin courant et l'euro (affiché par la police Nunito) sont conservés.
+    .replace(/[^\x09\x0a\x0d\x20-\x7e\u00a0-\u00ff\u20ac]/g, '')
 }
 
 const TITRE_ACTE: Record<Edl['typeActe'], string> = {
@@ -141,6 +142,9 @@ export async function genererRapport(source: Edl, avancement: Avancement = () =>
       .sort((a, b) => a - b)
       .join(', ')
   const preneur = edl.typeBien === 'local' ? 'preneur' : 'locataire'
+  // Sortie : état des lieux d'entrée de référence (comparaison).
+  const entree = edl.typeActe === 'sortie' && edl.edlEntreeId ? await db.edls.get(edl.edlEntreeId) : undefined
+  const avant = entree ? elementsParId(entree) : undefined
 
   const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true })
   const brut = (dataUrl: string) => dataUrl.slice(dataUrl.indexOf(',') + 1)
@@ -365,32 +369,43 @@ export async function genererRapport(source: Edl, avancement: Avancement = () =>
     y += 10
 
     const etats = piece.elements.map((e) => e.etat)
+    // Sortie : colonne « Entrée » (état constaté à l'entrée) avant l'état de sortie.
+    const avecEntree = !!avant
+    const etatsEntree = piece.elements.map((e) => avant?.get(e.id)?.etat)
+    const colEtat = avecEntree ? 3 : 2
     autoTable(doc, {
       ...styleTableau,
       startY: y,
-      head: [['Élément', 'Nature', 'État', 'Fonct.', 'Observations', 'Photos']],
-      body: piece.elements.map((e): RowInput => [
-        t(`${e.libelle}${e.quantite && e.quantite > 1 ? ` (x${e.quantite})` : ''}`),
-        t(e.nature),
-        e.etat ? (ETATS.find((x) => x.cle === e.etat)?.code ?? '') : '-',
-        e.equipement && e.fonctionnement ? t(FONCTIONNEMENT[e.fonctionnement]) : '',
-        observations(e),
-        nums(e.photoIds),
-      ]),
-      columnStyles: {
-        0: { cellWidth: 38, fontStyle: 'bold' },
-        1: { cellWidth: 26 },
-        2: { cellWidth: 12, halign: 'center', fontStyle: 'bold' },
-        3: { cellWidth: 17 },
-        5: { cellWidth: 16 },
-      },
+      head: [avecEntree ? ['Élément', 'Nature', 'Entrée', 'Sortie', 'Fonct.', 'Observations', 'Photos'] : ['Élément', 'Nature', 'État', 'Fonct.', 'Observations', 'Photos']],
+      body: piece.elements.map((e): RowInput => {
+        const code = (x?: string) => (x ? (ETATS.find((k) => k.cle === x)?.code ?? '') : '-')
+        const ligne = [
+          t(`${e.libelle}${e.quantite && e.quantite > 1 ? ` (x${e.quantite})` : ''}`),
+          t(e.nature),
+          code(e.etat),
+          e.equipement && e.fonctionnement ? t(FONCTIONNEMENT[e.fonctionnement]) : '',
+          observations(e),
+          nums(e.photoIds),
+        ]
+        if (avecEntree) ligne.splice(2, 0, avant!.has(e.id) ? code(avant!.get(e.id)!.etat) : 'Ajouté')
+        return ligne
+      }),
+      columnStyles: avecEntree
+        ? { 0: { cellWidth: 34, fontStyle: 'bold' }, 1: { cellWidth: 22 }, 2: { cellWidth: 13, halign: 'center' }, 3: { cellWidth: 13, halign: 'center', fontStyle: 'bold' }, 4: { cellWidth: 16 }, 6: { cellWidth: 15 } }
+        : { 0: { cellWidth: 38, fontStyle: 'bold' }, 1: { cellWidth: 26 }, 2: { cellWidth: 12, halign: 'center', fontStyle: 'bold' }, 3: { cellWidth: 17 }, 5: { cellWidth: 16 } },
       didParseCell: (d: CellHookData) => {
-        if (d.section === 'body' && d.column.index === 2) {
+        if (d.section !== 'body') return
+        if (d.column.index === colEtat) {
           const etat = etats[d.row.index]
           if (etat) {
             d.cell.styles.fillColor = COULEUR_ETAT[etat]
             d.cell.styles.textColor = [255, 255, 255]
           } else d.cell.styles.textColor = GRIS
+        }
+        if (avecEntree && d.column.index === 2) {
+          const etat = etatsEntree[d.row.index]
+          d.cell.styles.textColor = etat ? COULEUR_ETAT[etat] : GRIS
+          d.cell.styles.fontStyle = 'bold'
         }
       },
     })
@@ -408,6 +423,75 @@ export async function genererRapport(source: Edl, avancement: Avancement = () =>
   // =================================================================
   // 4. Observations et signatures
   // =================================================================
+  // =================================================================
+  // 3 bis. Sortie : comparaison avec l'entrée
+  // =================================================================
+  if (entree) {
+    y += 4
+    place(60)
+    section('Comparaison avec l\'état des lieux d\'entrée')
+    paragraphe(`Entrée ${entree.reference} du ${formatDate(entree.dateVisite)} · Sortie du ${formatDate(edl.dateVisite)}`, 9.5, 'normal', GRIS)
+    autoTable(doc, {
+      ...styleTableau,
+      startY: y,
+      head: [['Compteur', 'Index entrée', 'Index sortie', 'Consommation']],
+      body: (edl.compteurs ?? []).map((c) => {
+        const e = entree.compteurs?.find((x) => x.id === c.id || x.type === c.type)
+        const conso = consommation(e?.index, c.index)
+        return [t(c.libelle), t(e?.index) || '-', t(c.index) || '-', conso !== undefined ? t(conso.toLocaleString('fr-FR')) : '-']
+      }),
+    })
+    y = finTableau() + 4
+    autoTable(doc, {
+      ...styleTableau,
+      startY: y,
+      head: [['Clés, badges, télécommandes', 'Remis à l\'entrée', 'Restitués']],
+      body: (edl.cles ?? []).map((c) => [t(c.libelle), String(entree.cles?.find((x) => x.id === c.id)?.nombre ?? '-'), String(c.nombre)]),
+    })
+    y = finTableau() + 4
+    const lignes = comparer(edl, entree).filter((l) => l.evolution === 'degradation' || l.degradation)
+    if (lignes.length) {
+      police(10.5, 'bold', 'Nunito', BLEU)
+      place(10)
+      doc.text('Dégradations et vétusté', M, y + 2)
+      y += 5
+      const euros = (n: number) => t(n.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }))
+      const code = (x?: string) => ETATS.find((k) => k.cle === x)?.code ?? '-'
+      autoTable(doc, {
+        ...styleTableau,
+        startY: y,
+        head: [['Pièce / élément', 'Entrée > sortie', 'Âge', 'Vétusté', 'Part locataire', 'Coût', 'À charge']],
+        body: lignes.map((l) => {
+          const imputable = l.degradation ? l.degradation.imputable : true
+          return [
+            t(`${l.piece} - ${l.element.libelle}${l.degradation?.commentaire ? ` (${l.degradation.commentaire})` : ''}`),
+            `${code(l.entree?.etat)} > ${code(l.element.etat)}`,
+            imputable ? t(`${l.age.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} an(s)`) : '',
+            imputable ? `${l.vetuste} %` : '',
+            imputable ? `${l.partLocataire} %` : 'Non imputable',
+            l.degradation?.cout ? euros(l.degradation.cout) : '',
+            l.montant !== undefined ? euros(l.montant) : '',
+          ]
+        }),
+        columnStyles: { 1: { cellWidth: 24, halign: 'center' }, 2: { cellWidth: 16 }, 3: { cellWidth: 16, halign: 'right' }, 4: { cellWidth: 22, halign: 'right' }, 5: { cellWidth: 24, halign: 'right' }, 6: { cellWidth: 26, halign: 'right', fontStyle: 'bold' } },
+      })
+      y = finTableau() + 3
+      const total = lignes.reduce((s, l) => s + (l.montant ?? 0), 0)
+      if (total > 0) {
+        police(10.5, 'bold')
+        place(8)
+        doc.text(`Total estimé à la charge du ${preneur} : ${euros(total)}`, L - M, y + 2, { align: 'right' })
+        y += 8
+      }
+      paragraphe(
+        "Vétusté calculée selon la grille du bailleur (franchise, abattement annuel, valeur résiduelle), à partir de la date de pose ou de rénovation de chaque élément, à défaut de la date d'entrée. Les coûts sont estimatifs, sous réserve de devis ou factures.",
+        8,
+        'italic',
+        GRIS,
+      )
+    } else paragraphe("Aucune dégradation constatée par rapport à l'état des lieux d'entrée.", 9.5, 'italic', GRIS)
+  }
+
   y += 4
   place(60)
   section('Observations générales')

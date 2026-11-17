@@ -9,6 +9,8 @@ import {
   PenLine,
   Trash2,
   CircleAlert,
+  GitCompareArrows,
+  LogOut,
   Building2,
   Gauge,
   Lock,
@@ -24,6 +26,7 @@ import BlocPieces from '../components/BlocPieces'
 import BlocRubriques from '../components/BlocRubriques'
 import BoutonsRapport from '../components/BoutonsRapport'
 import { bienDepuisEdl } from '../db/patrimoine'
+import { creerSortieDepuisEntree } from '../db/sortie'
 
 /** Vue d'ensemble d'un état des lieux : on y voit d'un coup d'œil ce qui reste à faire. */
 export default function TableauDeBord() {
@@ -133,6 +136,38 @@ export default function TableauDeBord() {
           <span className="tuile-ligne-texte">
             <strong>Fiche du bien</strong>
             <span className="texte-doux">Caractéristiques permanentes et historique des états des lieux</span>
+          </span>
+          <ChevronRight />
+        </button>
+      )}
+
+      {edl.typeActe === 'entree' && edl.statut === 'signe' && (
+        <button
+          className="carte tuile-ligne"
+          style={{ marginBottom: 12 }}
+          onClick={async () => {
+            const id = await creerSortieDepuisEntree(edl)
+            navigate(`/edl/${id}`)
+          }}
+        >
+          <span className="tuile-ligne-icone">
+            <LogOut size={22} />
+          </span>
+          <span className="tuile-ligne-texte">
+            <strong>Préparer l'état des lieux de sortie</strong>
+            <span className="texte-doux">Mêmes pièces et éléments, locataires et compteurs repris ; l'entrée est rappelée sur chaque élément</span>
+          </span>
+          <ChevronRight />
+        </button>
+      )}
+      {edl.typeActe === 'sortie' && edl.edlEntreeId && (
+        <button className="carte tuile-ligne" style={{ marginBottom: 12 }} onClick={() => navigate(`/edl/${edl.id}/comparatif`)}>
+          <span className="tuile-ligne-icone">
+            <GitCompareArrows size={22} />
+          </span>
+          <span className="tuile-ligne-texte">
+            <strong>Comparatif entrée / sortie</strong>
+            <span className="texte-doux">Compteurs, clés, dégradations et vétusté</span>
           </span>
           <ChevronRight />
         </button>
