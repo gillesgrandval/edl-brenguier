@@ -11,6 +11,7 @@
 import { db, nouvelId } from './base'
 import { enregistrerEdl } from './edl'
 import type { Edl, Signataire } from './types'
+import { lireParametres } from './parametres'
 
 /** JSON aux clés triées : le même contenu donne toujours le même texte. */
 export function jsonStable(v: unknown): string {
@@ -91,6 +92,11 @@ export async function signerEdl(edl: Edl, saisies: SignatureSaisie[], lieu: stri
     signataires.push(sig)
   }
   const signe: Edl = { ...edl, statut: 'signe', signataires, lieuSignature: lieu.trim() || undefined }
+  // Sortie : la grille de vétusté du jour est figée dans l'état des lieux signé.
+  if (edl.typeActe === 'sortie' && edl.edlEntreeId) {
+    const p = await lireParametres()
+    signe.grilleVetuste = { grille: p.grille, validee: p.grilleValidee }
+  }
   signe.cloture = { signeLe: maintenant, empreinte: await calculerEmpreinte(signe), versionApp: __APP_VERSION__ }
   await enregistrerEdl(signe)
   return signe

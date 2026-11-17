@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, Gauge, GitCompareArrows, Info, KeyRound } from '
 import { db } from '../db/base'
 import { useEdl } from '../hooks/useEdl'
 import { comparer, consommation, type LigneComparatif } from '../db/sortie'
+import { useParametres } from '../db/parametres'
 import type { Degradation } from '../db/types'
 import { ETATS, formatDate } from '../libelles'
 import { Champ, Interrupteur, Section, Verrou } from '../components/ui'
@@ -20,6 +21,7 @@ export default function Comparatif() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { edl, modifier, sauvegarde } = useEdl(id)
+  const parametres = useParametres()
   const idEntree = edl?.edlEntreeId
   // Le résultat porte l'identifiant demandé : on attend la bonne entrée avant d'afficher.
   const charge = useLiveQuery(async () => ({ id: idEntree, edl: idEntree ? ((await db.edls.get(idEntree)) ?? null) : null }), [idEntree])
@@ -28,7 +30,9 @@ export default function Comparatif() {
   const entree = charge.edl
   if (!edl) return <Chargement introuvable />
 
-  const lignes = comparer(edl, entree)
+  const grille = (edl.grilleVetuste?.grille as NonNullable<typeof parametres>['grille'] | undefined) ?? parametres?.grille
+  const grilleValidee = edl.grilleVetuste ? edl.grilleVetuste.validee : parametres?.grilleValidee
+  const lignes = comparer(edl, entree, grille)
   const degradees = lignes.filter((l) => l.evolution === 'degradation' || l.degradation)
   const total = degradees.reduce((s, l) => s + (l.montant ?? 0), 0)
   const dateEntree = entree?.dateVisite
@@ -125,7 +129,7 @@ export default function Comparatif() {
 
         <Section titre={`Dégradations constatées (${degradees.length})`}>
           <p className="texte-doux note-vetuste">
-            <Info size={16} /> La vétusté (usure normale due au temps) reste à la charge du bailleur. Elle est calculée avec une <strong>grille indicative</strong> (à valider par le Groupe Brenguier),
+            <Info size={16} /> La vétusté (usure normale due au temps) reste à la charge du bailleur. Elle est calculée avec {grilleValidee ? <>la <strong>grille de vétusté du Groupe Brenguier</strong></> : <>une <strong>grille indicative</strong> (à valider dans les Paramètres)</>},
             à partir de la date de pose ou de rénovation de l'élément — par défaut, la date d'entrée. Les montants sont des estimations.
           </p>
           {degradees.length === 0 && <p className="recap-complet">Aucune dégradation : tous les éléments comparables sont dans un état égal ou meilleur qu'à l'entrée.</p>}

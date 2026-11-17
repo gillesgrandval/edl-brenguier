@@ -1,5 +1,6 @@
 import { db, nouvelId } from './base'
 import type { Cle, Edl, Piece, ReleveCompteur } from './types'
+import { lireParametres } from './parametres'
 
 /** Prochaine référence de l'année, ex. « EDL-2026-007 ». Compteur conservé dans la base. */
 export async function prochaineReference(): Promise<string> {
@@ -36,7 +37,7 @@ export async function creerEdl(): Promise<string> {
     modifieLe: maintenant,
     bien: { adresse: '', codePostal: '', ville: '', annexes: [] },
     bailleur: dernier?.bailleur ?? { raisonSociale: '', adresse: '' },
-    operateur: dernier?.operateur ?? { nom: '' },
+    operateur: (await lireParametres()).operateur ?? dernier?.operateur ?? { nom: '' },
     locataires: [{ id: nouvelId(), nom: '' }],
     chauffage: { mode: 'individuel' },
     eauChaude: { mode: 'individuel', idemChauffage: true },

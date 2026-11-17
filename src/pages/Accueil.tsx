@@ -166,6 +166,7 @@ export default function Accueil() {
         </>
       )}
 
+      <RappelSauvegarde />
       <EtatTablette />
     </>
   )
@@ -251,5 +252,21 @@ function EtatTablette() {
       </span>
       <span className="version">v{__APP_VERSION__}</span>
     </div>
+  )
+}
+
+/** Rappel de sauvegarde : les données ne sont que sur l'appareil. */
+function RappelSauvegarde() {
+  const navigate = useNavigate()
+  const infos = useLiveQuery(async () => ({ nb: await db.edls.count(), derniere: (await db.meta.get('derniere-sauvegarde'))?.valeur as string | undefined }), [])
+  if (!infos || infos.nb === 0) return null
+  const jours = infos.derniere ? Math.floor((Date.now() - new Date(infos.derniere).getTime()) / 86400000) : null
+  if (jours !== null && jours < 7) return null
+  return (
+    <button className="carte rappel rappel-sauvegarde" onClick={() => navigate('/parametres')}>
+      <HardDrive size={20} />
+      <span>{jours === null ? 'Aucune sauvegarde : vos données ne sont que sur cet appareil. Pensez à en créer une.' : `Dernière sauvegarde il y a ${jours} jours : pensez à en créer une nouvelle.`}</span>
+      <ChevronRight size={18} />
+    </button>
   )
 }

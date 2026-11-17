@@ -8,6 +8,7 @@ import { db, nouvelId } from './base'
 import { normaliser, prochaineReference } from './edl'
 import type { Bien, CategorieBien, Edl, ReleveCompteur, TypeBien, TypeCompteur } from './types'
 import { creerPiecesDepuisBien } from '../modeles/pieces'
+import { lireParametres } from './parametres'
 
 export const LIBELLE_CATEGORIE: Record<CategorieBien, string> = {
   appartement: 'Appartement',
@@ -75,7 +76,7 @@ export async function creerEdlDepuisBien(bien: Bien, dateVisite: string): Promis
     // Bailleur : la société du bien si elle est connue, sinon à compléter (jamais devinée).
     bailleur: bien.societe ? { raisonSociale: bien.societe, adresse: '' } : { raisonSociale: '', adresse: '' },
     // L'opérateur est la personne qui réalise les états des lieux : on reprend le dernier utilisé.
-    operateur: dernier?.operateur ?? { nom: '' },
+    operateur: (await lireParametres()).operateur ?? dernier?.operateur ?? { nom: '' },
     locataires: [{ id: nouvelId(), nom: '' }],
     chauffage: { mode: 'individuel' },
     eauChaude: { mode: 'individuel', idemChauffage: true },

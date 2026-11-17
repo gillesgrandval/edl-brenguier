@@ -214,7 +214,8 @@ export interface LigneAnalysee {
 export const cleRapprochement = (b: Partial<Bien>) => [b.ville, b.adresse, b.lot || b.reference].map(normaliser).join('|')
 
 export function analyserLignes(lignes: unknown[][], correspondance: Correspondance, existants: Bien[]): LigneAnalysee[] {
-  const parId = new Map(existants.filter((b) => b.identifiantExterne).map((b) => [normaliser(b.identifiantExterne), b]))
+  // Identifiant du fichier, ou identifiant technique (présent dans un export de l'application).
+  const parId = new Map([...existants.map((b) => [normaliser(b.id), b] as const), ...existants.filter((b) => b.identifiantExterne).map((b) => [normaliser(b.identifiantExterne), b] as const)])
   const parCle = new Map(existants.map((b) => [cleRapprochement(b), b]))
   const vues = new Set<string>()
   const val = (l: unknown[], c: CleChamp) => (correspondance[c] === undefined ? undefined : l[correspondance[c]!])
@@ -297,6 +298,8 @@ export function construireBien(l: LigneAnalysee, nouvelId: () => string, mainten
     modifieLe: maintenant,
   }
   const b: Bien = { ...base, ...l.valeurs, modifieLe: maintenant }
+  // Identifiant technique relu depuis un export : ce n'est pas un identifiant externe.
+  if (l.existant && b.identifiantExterne === l.existant.id) b.identifiantExterne = l.existant.identifiantExterne
   if (!l.existant && !l.valeurs.categorie) b.categorie = l.valeurs.typologie && /^t\d/i.test(l.valeurs.typologie) ? 'appartement' : 'autre'
   if (!b.pieces.length) b.pieces = compositionDepuisTableau(b)
   return b

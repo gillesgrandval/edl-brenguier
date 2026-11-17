@@ -21,6 +21,7 @@ import type { Edl, Element, Photo } from '../db/types'
 import { ETATS, LIBELLE_BIEN, formatDate } from '../libelles'
 import { CHARTE, rvb } from '../theme/charte'
 import { comparer, consommation, elementsParId } from '../db/sortie'
+import { lireParametres } from '../db/parametres'
 // Charte Groupe Brenguier : logo et police de texte Nunito (licence libre OFL).
 import logoSignature from './ressources/logo-signature-bleu.png?inline'
 import logoIcone from './ressources/logo-icone-bleu.png?inline'
@@ -145,6 +146,10 @@ export async function genererRapport(source: Edl, avancement: Avancement = () =>
   // Sortie : état des lieux d'entrée de référence (comparaison).
   const entree = edl.typeActe === 'sortie' && edl.edlEntreeId ? await db.edls.get(edl.edlEntreeId) : undefined
   const avant = entree ? elementsParId(entree) : undefined
+  const parametres = await lireParametres()
+  // Grille figée à la signature si elle existe, sinon grille actuelle des Paramètres.
+  const grille = (edl.grilleVetuste?.grille as typeof parametres.grille | undefined) ?? parametres.grille
+  const grilleValidee = edl.grilleVetuste ? edl.grilleVetuste.validee : parametres.grilleValidee
 
   const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true })
   const brut = (dataUrl: string) => dataUrl.slice(dataUrl.indexOf(',') + 1)
@@ -449,7 +454,7 @@ export async function genererRapport(source: Edl, avancement: Avancement = () =>
       body: (edl.cles ?? []).map((c) => [t(c.libelle), String(entree.cles?.find((x) => x.id === c.id)?.nombre ?? '-'), String(c.nombre)]),
     })
     y = finTableau() + 4
-    const lignes = comparer(edl, entree).filter((l) => l.evolution === 'degradation' || l.degradation)
+    const lignes = comparer(edl, entree, grille).filter((l) => l.evolution === 'degradation' || l.degradation)
     if (lignes.length) {
       police(10.5, 'bold', 'Nunito', BLEU)
       place(10)
@@ -484,7 +489,7 @@ export async function genererRapport(source: Edl, avancement: Avancement = () =>
         y += 8
       }
       paragraphe(
-        "Vétusté calculée selon la grille du bailleur (franchise, abattement annuel, valeur résiduelle), à partir de la date de pose ou de rénovation de chaque élément, à défaut de la date d'entrée. Les coûts sont estimatifs, sous réserve de devis ou factures.",
+        `Vétusté calculée selon ${grilleValidee ? 'la grille de vétusté du bailleur' : 'une grille indicative'} (franchise, abattement annuel, valeur résiduelle), à partir de la date de pose ou de rénovation de chaque élément, à défaut de la date d'entrée. Les coûts sont estimatifs, sous réserve de devis ou factures.`,
         8,
         'italic',
         GRIS,
@@ -572,6 +577,7 @@ export async function genererRapport(source: Edl, avancement: Avancement = () =>
       )
   }
   mentions.push('Les photographies annexées, numérotées et horodatées, font partie intégrante du présent état des lieux.')
+  if (parametres.mentionsPdf?.trim()) mentions.push(...parametres.mentionsPdf.split(/\n+/).map((m) => m.trim()).filter(Boolean))
   for (const m of mentions) paragraphe(m, 8.5, 'normal', GRIS)
 
   if (signe) {

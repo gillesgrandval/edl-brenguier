@@ -809,3 +809,9 @@ input[type="search"]::-webkit-search-cancel-button { display: none; }
 .calcul-montant { color: var(--principal); }
 .total-degradations { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 19px; border-color: var(--principal); }
 .total-degradations strong { font-size: 24px; color: var(--principal); }
+
+/* Étape 9 : paramètres, sauvegarde, exports */
+.fichier-pret { display: grid; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--trait); }
+.table-grille input.saisie-nombre { width: 90px; min-height: 44px; padding: 6px 10px; }
+.table-grille td:first-child { min-width: 200px; }
+.rappel-sauvegarde { display: flex; align-items: center; gap: 10px; margin-top: 16px; text-decoration: none; }

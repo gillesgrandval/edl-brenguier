@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Routes, Route, useLocation, Link, NavLink } from 'react-router-dom'
-import { Building2, ClipboardList, Wifi, WifiOff } from 'lucide-react'
+import { Building2, ClipboardList, Settings, Wifi, WifiOff } from 'lucide-react'
 import Accueil from './pages/Accueil'
 import Infos from './pages/Infos'
 import TableauDeBord from './pages/TableauDeBord'
@@ -11,6 +11,7 @@ import Patrimoine from './pages/Patrimoine'
 import FicheBien from './pages/FicheBien'
 import ImportExcel from './pages/ImportExcel'
 import Comparatif from './pages/Comparatif'
+import Parametres from './pages/Parametres'
 import { Cles, Compteurs, Detecteur, Observations } from './pages/Rubriques'
 import MiseAJour from './components/MiseAJour'
 import logoSignatureBlanc from './assets/charte/logo-signature-blanc.png'
@@ -38,6 +39,9 @@ export default function App() {
           <NavLink to="/patrimoine" className={({ isActive }) => (isActive ? 'actif' : '')}>
             <Building2 size={18} /> <span>Patrimoine</span>
           </NavLink>
+          <NavLink to="/parametres" className={({ isActive }) => (isActive ? 'actif' : '')} aria-label="Paramètres">
+            <Settings size={18} />
+          </NavLink>
         </nav>
         <div className="reseau" aria-live="polite">
           {enLigne ? <Wifi size={18} /> : <WifiOff size={18} />}
@@ -49,6 +53,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Accueil />} />
           <Route path="/nouveau" element={<ChoixBien />} />
+          <Route path="/parametres" element={<Parametres />} />
           <Route path="/patrimoine" element={<Patrimoine />} />
           <Route path="/patrimoine/import" element={<ImportExcel />} />
           <Route path="/patrimoine/:id" element={<FicheBien />} />

@@ -10,7 +10,7 @@
 import { db, nouvelId } from './base'
 import { normaliser, prochaineReference } from './edl'
 import type { Degradation, Edl, Element, Etat, Piece } from './types'
-import { GRILLE_VETUSTE, ageEnAnnees, categorieVetuste, tauxVetuste } from '../modeles/vetuste'
+import { GRILLE_VETUSTE, ageEnAnnees, categorieVetuste, tauxVetuste, type CategorieVetuste, type LigneGrille } from '../modeles/vetuste'
 
 /** Rang d'un état, du meilleur (0) au pire ; « absent / non vérifié » n'est pas comparable. */
 const RANG: Partial<Record<Etat, number>> = { neuf: 0, tres_bon: 1, bon: 2, use: 3, mauvais: 4, hs: 5 }
@@ -91,7 +91,7 @@ export interface LigneComparatif {
 }
 
 /** Tableau comparatif d'une sortie, avec la vétusté de chaque élément dégradé. */
-export function comparer(sortie: Edl, entree: Edl | undefined | null): LigneComparatif[] {
+export function comparer(sortie: Edl, entree: Edl | undefined | null, grille: Record<CategorieVetuste, LigneGrille> = GRILLE_VETUSTE): LigneComparatif[] {
   const avant = elementsParId(entree)
   const lignes: LigneComparatif[] = []
   for (const p of sortie.pieces)
@@ -100,7 +100,7 @@ export function comparer(sortie: Edl, entree: Edl | undefined | null): LigneComp
       const evo = evolution(ent, el)
       const deg = sortie.degradations?.[el.id]
       const cat = categorieVetuste(el)
-      const g = GRILLE_VETUSTE[cat]
+      const g = grille[cat]
       const age = ageEnAnnees(deg?.depuis ?? entree?.dateVisite ?? sortie.dateVisite, sortie.dateVisite)
       const vetuste = tauxVetuste(g, age)
       const imputable = deg ? deg.imputable : evo === 'degradation'

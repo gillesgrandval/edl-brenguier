@@ -125,6 +125,8 @@ export interface Edl {
   bienId?: string
   /** Sortie : chiffrage des dégradations, par identifiant d'élément (même identifiant qu'à l'entrée). */
   degradations?: Record<string, Degradation>
+  /** Sortie signée : grille de vétusté en vigueur à la signature (figée, couverte par l'empreinte). */
+  grilleVetuste?: { grille: Record<string, { libelle: string; franchise: number; abattement: number; residuel: number }>; validee: boolean }
 
   chauffage: Energie
   eauChaude: Energie & { idemChauffage?: boolean }
