@@ -1,3 +1,4 @@
+import { CHARTE, POLICE_TEXTE, transparence } from '../theme/charte'
 import { db, nouvelId } from '../db/base'
 import type { Photo } from '../db/types'
 
@@ -29,14 +30,14 @@ function dessinerBandeau(ctx: CanvasRenderingContext2D, w: number, h: number, ga
   const police = Math.max(16, Math.round(w * 0.017))
   const hauteur = Math.round(police * 2.1)
   const marge = Math.round(police * 0.8)
-  ctx.fillStyle = 'rgba(28, 43, 58, 0.82)'
+  ctx.fillStyle = transparence(CHARTE.bleu, 0.86)
   ctx.fillRect(0, h - hauteur, w, hauteur)
-  ctx.fillStyle = '#A8763E'
+  ctx.fillStyle = CHARTE.or
   ctx.fillRect(0, h - hauteur, w, Math.max(2, Math.round(police * 0.12)))
   ctx.textBaseline = 'middle'
-  ctx.font = `700 ${police}px Carlito, Calibri, sans-serif`
+  ctx.font = `700 ${police}px ${POLICE_TEXTE}`
   const largeurDroite = ctx.measureText(droite).width
-  ctx.fillStyle = '#E9DCC9'
+  ctx.fillStyle = CHARTE.blancCasse
   ctx.textAlign = 'right'
   ctx.fillText(droite, w - marge, h - hauteur / 2)
   ctx.fillStyle = '#FFFFFF'
@@ -45,7 +46,7 @@ function dessinerBandeau(ctx: CanvasRenderingContext2D, w: number, h: number, ga
 }
 
 export async function traiterPhoto(fichier: Blob, legende: string, date: Date): Promise<{ image: Blob; miniature: Blob }> {
-  await document.fonts?.load('700 20px Carlito').catch(() => undefined)
+  await document.fonts?.load('700 20px Nunito').catch(() => undefined)
   const bmp = await createImageBitmap(fichier, { imageOrientation: 'from-image' })
   const echelle = Math.min(1, TAILLE_MAX / Math.max(bmp.width, bmp.height))
   const w = Math.round(bmp.width * echelle)

@@ -9,6 +9,7 @@ import { importerPreparation } from '../db/patrimoine'
 import type { Edl, Statut, TypeActe, TypeBien } from '../db/types'
 import { LIBELLE_ACTE, LIBELLE_BIEN, LIBELLE_STATUT, formatDate } from '../libelles'
 import { Badge, BarreProgression } from '../components/ui'
+import logoPrincipal from '../assets/charte/logo-principal.png'
 
 type Filtre<T> = T | 'tous'
 
@@ -63,7 +64,8 @@ export default function Accueil() {
   return (
     <>
       <section className="carte accueil-hero">
-        <div>
+        <img className="accueil-logo" src={logoPrincipal} alt="Groupe Brenguier" />
+        <div className="accueil-texte">
           <p className="surtitre">GROUPE BRENGUIER</p>
           <h1>États des lieux</h1>
           <hr className="filet" />

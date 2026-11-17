@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { CHARTE } from '../theme/charte'
 import { ArrowUpRight, Check, Circle, Pencil, Square, Trash2, Type, Undo2, X } from 'lucide-react'
 import { db } from '../db/base'
 import type { Forme } from '../db/types'
@@ -13,7 +14,8 @@ import { dessinerForme } from '../photos/dessin'
 
 type Outil = 'fleche' | 'cercle' | 'rectangle' | 'main' | 'texte'
 
-const COULEURS = ['#E53935', '#FFC400', '#FFFFFF', '#1E88E5', '#1C2B3A']
+// Couleurs d'annotation : vives pour ressortir sur toutes les photos, plus le noir de la charte.
+const COULEURS = ['#E53935', '#FFC400', '#FFFFFF', '#1E88E5', CHARTE.noir]
 
 const OUTILS: { cle: Outil; libelle: string; icone: React.ReactNode }[] = [
   { cle: 'fleche', libelle: 'Flèche', icone: <ArrowUpRight /> },

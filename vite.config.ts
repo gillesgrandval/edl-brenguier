@@ -20,7 +20,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'prompt', // on prévient l'utilisateur avant d'appliquer une mise à jour
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
+      includeAssets: ['favicon.png', 'apple-touch-icon.png'],
       manifest: {
         name: 'EDL Brenguier — États des lieux',
         short_name: 'EDL Brenguier',
@@ -30,8 +30,8 @@ export default defineConfig({
         scope: BASE,
         display: 'standalone',
         orientation: 'any',
-        background_color: '#F6F3EE',
-        theme_color: '#1C2B3A',
+        background_color: '#F4F3F2',
+        theme_color: '#26458F',
         icons: [
           { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },

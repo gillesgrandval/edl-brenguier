@@ -19,6 +19,7 @@ import { normaliser } from '../db/edl'
 import { empreinteLisible } from '../db/cloture'
 import type { Edl, Element, Photo } from '../db/types'
 import { ETATS, LIBELLE_BIEN, formatDate } from '../libelles'
+import { CHARTE, rvb } from '../theme/charte'
 // Charte Groupe Brenguier : logo et police de texte Nunito (licence libre OFL).
 import logoSignature from './ressources/logo-signature-bleu.png?inline'
 import logoIcone from './ressources/logo-icone-bleu.png?inline'
@@ -27,12 +28,12 @@ import nunitoBold from './ressources/Nunito-Bold.ttf?inline'
 import nunitoItalic from './ressources/Nunito-Italic.ttf?inline'
 
 // --- Charte Groupe Brenguier -------------------------------------------
-const BLEU: [number, number, number] = [38, 69, 143] // #26458F, couleur dominante
-const OR: [number, number, number] = [202, 148, 64] // #CA9440, couleur dominante
+const BLEU = rvb(CHARTE.bleu)
+const OR = rvb(CHARTE.or)
 const ENCRE: [number, number, number] = [28, 30, 38] // texte courant
 const GRIS: [number, number, number] = [96, 104, 118]
 const TRAIT: [number, number, number] = [226, 225, 222]
-const FOND: [number, number, number] = [244, 243, 242] // #F4F3F2
+const FOND = rvb(CHARTE.blancCasse)
 const COULEUR_ETAT: Record<string, [number, number, number]> = {
   neuf: [46, 125, 91],
   tres_bon: [79, 157, 105],

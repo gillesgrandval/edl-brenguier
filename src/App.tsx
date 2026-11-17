@@ -9,6 +9,7 @@ import Signature from './pages/Signature'
 import ChoixBien from './pages/ChoixBien'
 import { Cles, Compteurs, Detecteur, Observations } from './pages/Rubriques'
 import MiseAJour from './components/MiseAJour'
+import logoSignatureBlanc from './assets/charte/logo-signature-blanc.png'
 import { useEnLigne } from './hooks/useEnLigne'
 
 export default function App() {
@@ -24,10 +25,8 @@ export default function App() {
     <div className="app">
       <header className="entete">
         <Link to="/" className="entete-accueil" aria-label="Accueil">
-          <img src={`${import.meta.env.BASE_URL}icon-192.png`} alt="" />
-          <div className="marque">
-            EDL <span>Brenguier</span>
-          </div>
+          <img className="entete-logo" src={logoSignatureBlanc} alt="Groupe Brenguier" />
+          <span className="entete-titre">États des lieux</span>
         </Link>
         <div className="reseau" aria-live="polite">
           {enLigne ? <Wifi size={18} /> : <WifiOff size={18} />}

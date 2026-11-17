@@ -1,3 +1,4 @@
+import { CHARTE, POLICE_TEXTE } from '../theme/charte'
 import type { Forme } from '../db/types'
 
 /** Dessine une forme sur le canevas. */
@@ -11,10 +12,10 @@ export function dessinerForme(ctx: CanvasRenderingContext2D, f: Forme) {
   ctx.shadowColor = 'rgba(0,0,0,0.55)'
   ctx.shadowBlur = 'epaisseur' in f ? f.epaisseur * 0.8 : 6
   if (f.type === 'texte') {
-    ctx.font = `700 ${f.taille}px Carlito, Calibri, sans-serif`
+    ctx.font = `700 ${f.taille}px ${POLICE_TEXTE}`
     ctx.textBaseline = 'middle'
     ctx.lineWidth = f.taille / 7
-    ctx.strokeStyle = f.couleur === '#FFFFFF' || f.couleur === '#FFC400' ? '#1C2B3A' : '#FFFFFF'
+    ctx.strokeStyle = f.couleur === '#FFFFFF' || f.couleur === '#FFC400' ? CHARTE.noir : '#FFFFFF'
     ctx.shadowBlur = 0
     ctx.strokeText(f.texte, f.x, f.y)
     ctx.fillText(f.texte, f.x, f.y)

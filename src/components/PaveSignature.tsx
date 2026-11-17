@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { CHARTE } from '../theme/charte'
 import { Eraser } from 'lucide-react'
 
 /**
@@ -22,7 +23,7 @@ export default function PaveSignature(props: { onChange: (image: Blob | null) =>
     ctx.scale(dpr, dpr)
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
-    ctx.strokeStyle = '#1c2b3a'
+    ctx.strokeStyle = CHARTE.bleu
   }, [])
 
   const point = (e: React.PointerEvent) => {
@@ -38,7 +39,7 @@ export default function PaveSignature(props: { onChange: (image: Blob | null) =>
     dernier.current = { ...p, l: 2.6 }
     const ctx = canevas.current!.getContext('2d')!
     ctx.beginPath()
-    ctx.fillStyle = '#1c2b3a'
+    ctx.fillStyle = CHARTE.bleu
     ctx.arc(p.x, p.y, 1.3, 0, Math.PI * 2)
     ctx.fill()
   }
