@@ -78,6 +78,7 @@ export interface SignatureSaisie {
 
 /** Enregistre les signatures, fige l'état des lieux et calcule son empreinte. */
 export async function signerEdl(edl: Edl, saisies: SignatureSaisie[], lieu: string): Promise<Edl> {
+  if (edl.commune) throw new Error("Une visite commune ne se signe pas : terminez d'abord la visite pour créer la sortie et l'entrée.")
   const maintenant = new Date().toISOString()
   const signataires: Signataire[] = []
   for (const s of saisies) {

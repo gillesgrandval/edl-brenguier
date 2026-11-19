@@ -47,14 +47,14 @@ export function libelleBien(b: Bien): string {
  * Seules les informations connues sont reprises : locataire, type d'acte et heure
  * restent à compléter. Les équipements sont ajoutés SANS état (à vérifier sur place).
  */
-export async function creerEdlDepuisBien(bien: Bien, dateVisite: string): Promise<string> {
+export async function creerEdlDepuisBien(bien: Bien, dateVisite: string, reference?: string): Promise<string> {
   const maintenant = new Date().toISOString()
   const dernier = await db.edls.orderBy('modifieLe').last()
   const typeBien = typeBienEdl(bien.categorie)
   const compteurs: ReleveCompteur[] = bien.compteurs.map((type) => ({ id: nouvelId(), type, libelle: LIBELLE_COMPTEUR[type], photoIds: [] }))
   const edl: Edl = {
     id: nouvelId(),
-    reference: await prochaineReference(),
+    reference: reference ?? (await prochaineReference()),
     typeActe: 'a_definir',
     typeBien,
     meuble: !!bien.meuble,

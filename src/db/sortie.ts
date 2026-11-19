@@ -27,7 +27,7 @@ export function evolution(entree: Element | undefined, sortie: Element): Evoluti
 }
 
 /** Prépare la sortie d'une entrée (de préférence signée). */
-export async function creerSortieDepuisEntree(entree: Edl): Promise<string> {
+export async function creerSortieDepuisEntree(entree: Edl, reference?: string): Promise<string> {
   const maintenant = new Date().toISOString()
   const e = normaliser(entree)
   const vierge = (el: Element): Element => {
@@ -56,7 +56,7 @@ export async function creerSortieDepuisEntree(entree: Edl): Promise<string> {
   const pad = (n: number) => String(n).padStart(2, '0')
   const sortie: Edl = {
     id: nouvelId(),
-    reference: await prochaineReference(),
+    reference: reference ?? (await prochaineReference()),
     typeActe: 'sortie',
     typeBien: e.typeBien,
     meuble: e.meuble,

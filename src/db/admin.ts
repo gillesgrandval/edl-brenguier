@@ -83,6 +83,7 @@ export const LIBELLE_ACTION: Record<ActionJournal, string> = {
   code_defini: 'Code défini',
   code_modifie: 'Code modifié',
   code_reinitialise: 'Code réinitialisé',
+  visite_terminee: 'Visite commune terminée',
 }
 
 // --- Corbeille (brouillons) -------------------------------------------

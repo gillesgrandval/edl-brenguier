@@ -16,13 +16,15 @@ import {
   Lock,
   Archive,
   Undo2,
+  ArrowRightLeft,
+  Link2,
 } from 'lucide-react'
 import { db } from '../db/base'
 import type { Edl } from '../db/types'
 import { adresseCourte, compteurFait, infosManquantes, nomsLocataires, progressionGlobale, normaliser, progressionPiece } from '../db/edl'
 import { restaurerDeLaCorbeille } from '../db/admin'
 import { BandeauAnnule, DialogueSuppression } from '../components/Admin'
-import { LIBELLE_ACTE, LIBELLE_BIEN, formatDate } from '../libelles'
+import { libelleActe, LIBELLE_BIEN, formatDate } from '../libelles'
 import { Badge, BarreProgression, Section } from '../components/ui'
 import Chargement from '../components/Chargement'
 import { ICONE_BIEN } from '../components/icones'
@@ -32,6 +34,7 @@ import BoutonsRapport from '../components/BoutonsRapport'
 import MiseAJourFiche from '../components/MiseAJourFiche'
 import { bienDepuisEdl } from '../db/patrimoine'
 import { creerSortieDepuisEntree } from '../db/sortie'
+import { creerVisiteDepuisEntree } from '../db/visite'
 
 /** Vue d'ensemble d'un état des lieux : on y voit d'un coup d'œil ce qui reste à faire. */
 export default function TableauDeBord() {
@@ -65,7 +68,7 @@ export default function TableauDeBord() {
         <div className="tdb-titre">
           <div className="carte-edl-haut">
             <span className="reference">{edl.reference}</span>
-            <Badge ton={edl.typeActe === 'sortie' ? 'bronze' : 'encre'}>{LIBELLE_ACTE[edl.typeActe]}</Badge>
+            <Badge ton={edl.typeActe === 'sortie' ? 'bronze' : 'encre'}>{libelleActe(edl)}</Badge>
             <Badge>
               <Icone size={14} /> {LIBELLE_BIEN[edl.typeBien]}
               {edl.meuble ? ' meublé' : ''}
@@ -86,6 +89,34 @@ export default function TableauDeBord() {
             <Undo2 size={18} /> Restaurer
           </button>
         </div>
+      )}
+
+      {edl.commune && (
+        <div className="carte bandeau-visite">
+          <ArrowRightLeft size={20} />
+          <div>
+            <strong>Visite commune : sortie + entrée</strong>
+            <p className="texte-doux" style={{ margin: '4px 0 0' }}>
+              Parcourez le logement une seule fois. À la fin, « Terminer la visite » crée deux états des lieux séparés : la sortie (locataire sortant) et l'entrée (nouveau locataire), chacun signé à part.
+            </p>
+          </div>
+        </div>
+      )}
+      {edl.issuDeVisite && (
+        <button className="carte bandeau-visite" onClick={() => navigate(`/edl/${edl.issuDeVisite!.autreId}`)}>
+          <Link2 size={20} />
+          <div style={{ flex: 1, textAlign: 'left' }}>
+            <strong>
+              Issu de la visite commune {edl.issuDeVisite.reference} — document lié : {edl.typeActe === 'sortie' ? 'entrée' : 'sortie'} {edl.issuDeVisite.autreReference}
+            </strong>
+            {edl.statut !== 'signe' && (
+              <p className="texte-doux" style={{ margin: '4px 0 0' }}>
+                Les deux documents sont indépendants : une correction faite ici ne se reporte pas dans l'autre.
+              </p>
+            )}
+          </div>
+          <ChevronRight />
+        </button>
       )}
 
       <div className="carte tdb-progression">
@@ -177,6 +208,25 @@ export default function TableauDeBord() {
           <ChevronRight />
         </button>
       )}
+      {edl.typeActe === 'entree' && edl.statut === 'signe' && !annulation && (
+        <button
+          className="carte tuile-ligne"
+          style={{ marginBottom: 12 }}
+          onClick={async () => {
+            const id = await creerVisiteDepuisEntree(edl)
+            navigate(`/edl/${id}/infos`)
+          }}
+        >
+          <span className="tuile-ligne-icone">
+            <ArrowRightLeft size={22} />
+          </span>
+          <span className="tuile-ligne-texte">
+            <strong>Préparer une visite commune : sortie + nouvelle entrée</strong>
+            <span className="texte-doux">Le nouveau locataire entre le jour de la sortie : une seule visite, deux états des lieux séparés</span>
+          </span>
+          <ChevronRight />
+        </button>
+      )}
       {edl.typeActe === 'sortie' && edl.edlEntreeId && (
         <button className="carte tuile-ligne" style={{ marginBottom: 12 }} onClick={() => navigate(`/edl/${edl.id}/comparatif`)}>
           <span className="tuile-ligne-icone">
@@ -194,6 +244,20 @@ export default function TableauDeBord() {
 
       <BlocRubriques edl={edl} />
 
+      {edl.commune ? (
+        <Section titre="Fin de la visite">
+          <button className="carte tuile-ligne" onClick={() => navigate(`/edl/${edl.id}/terminer`)}>
+            <span className="tuile-ligne-icone">
+              <ArrowRightLeft size={22} />
+            </span>
+            <span className="tuile-ligne-texte">
+              <strong>Terminer la visite</strong>
+              <span className="texte-doux">Créer l'état des lieux de sortie et l'état des lieux d'entrée, puis les faire signer séparément</span>
+            </span>
+            <ChevronRight />
+          </button>
+        </Section>
+      ) : (
       <Section titre="Clôture">
         <button className={`carte tuile-ligne ${edl.statut === 'signe' ? 'tuile-ligne-ok' : ''}`} onClick={() => navigate(`/edl/${edl.id}/signature`)}>
           <span className="tuile-ligne-icone">{edl.statut === 'signe' ? <Lock size={22} /> : <PenLine size={22} />}</span>
@@ -211,6 +275,7 @@ export default function TableauDeBord() {
           <BoutonsRapport edl={edl} />
         </div>
       </Section>
+      )}
 
       {!edl.corbeille && (
         <div className="zone-danger">

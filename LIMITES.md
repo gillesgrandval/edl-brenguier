@@ -13,6 +13,12 @@ Ce que l'application ne fait pas, ou fait avec des réserves. À connaître avan
 - La signature est **manuscrite, tracée au doigt**, protégée par une empreinte SHA-256 qui prouve l'intégrité du document. Ce n'est **pas une signature électronique qualifiée** (au sens du règlement eIDAS) : c'est une signature simple, adaptée à un état des lieux établi contradictoirement en présence des parties. Remettez le PDF au locataire immédiatement.
 - Un état des lieux signé ne peut plus être modifié ni « dé-signé » : en cas d'erreur, il faut en créer un nouveau.
 
+## Visite commune (sortie + entrée)
+
+- Le contrôle de confidentialité recherche les noms, prénoms, téléphones, e-mails et la nouvelle adresse saisis pour chaque locataire. Il ne peut pas reconnaître une information écrite autrement (par exemple un surnom ou un numéro mal recopié) : relisez les commentaires communs.
+- Une photo prise pendant la visite figure dans les deux documents. Retirez-la de l'un d'eux avant sa signature si elle ne concerne qu'un locataire.
+- Sans entrée précédente dans l'application, la sortie n'a pas de comparatif automatique. Le comparatif à partir d'un ancien PDF est prévu plus tard.
+
 ## Dictée et lecture des compteurs
 
 - **La dictée vocale nécessite Internet** (reconnaissance vocale de Google dans Chrome). Hors ligne, utilisez le **micro du clavier Samsung** dans les zones de texte.

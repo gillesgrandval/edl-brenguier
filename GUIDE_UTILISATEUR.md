@@ -128,6 +128,22 @@ Bouton **corbeille** à droite de chaque état des lieux dans la liste, ou en ba
 
 La vétusté suit la grille des Paramètres. Les montants sont des estimations, sous réserve de devis ou de factures.
 
+## Visite commune : sortie et nouvelle entrée le même jour
+
+Quand le locataire sortant et le nouveau locataire sont présents ensemble, une seule visite suffit.
+
+1. **Nouvel état des lieux** → choisissez le bien → **« Visite commune : sortie + entrée »**. L'écran indique si l'entrée précédente du bien a été retrouvée dans l'application. Si c'est le cas, l'état à l'entrée s'affiche sur chaque élément. Vous pouvez aussi partir d'une entrée signée : **« Préparer une visite commune »**.
+2. **Les parties** : le **locataire sortant** (avec sa nouvelle adresse) et le **locataire entrant** se saisissent dans deux blocs séparés. Le représentant du bailleur est commun.
+3. **Parcourez le logement une fois.** Les états, photos et commentaires valent pour les deux documents. Si besoin, chaque élément propose deux observations **propres à un seul document** : « propre à la sortie » (par exemple une contestation du sortant) et « réserve de l'entrant ».
+4. **Clés** : pour chaque ligne, le nombre **restitué** par le sortant et le nombre **remis** à l'entrant. **Compteurs** : relevés une seule fois.
+5. **Observations** : les remarques du sortant et celles de l'entrant ont chacune leur zone.
+6. **« Terminer la visite »** : l'écran montre les deux documents qui seront créés et fait un **contrôle de confidentialité**.
+   - Si le téléphone ou l'e-mail d'un locataire figure dans un texte repris dans le document de l'autre, il faut le retirer.
+   - Si un nom apparaît (cela peut être un mot courant, comme « Port »), cochez « J'ai vérifié » après contrôle.
+7. Deux états des lieux sont créés : **A – Sortie** (locataire sortant, comparatif avec l'entrée) et **B – Entrée** (locataire entrant, sans aucune donnée du sortant). Chacun a sa copie des photos. **Faites signer chacun séparément** : le représentant signe les deux.
+
+La fiche de visite disparaît et l'opération est inscrite au journal. Jusqu'à leur signature, les deux documents restent modifiables, mais une correction faite dans l'un ne se reporte pas dans l'autre.
+
 ## Patrimoine
 
 - **Liste** avec recherche et filtres (ville, type, résidence, société).

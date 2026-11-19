@@ -270,6 +270,8 @@ export function Cles() {
   const edl = r.edl
   const cles = edl.cles ?? []
   const total = cles.reduce((n, c) => n + c.nombre, 0)
+  const commune = !!edl.commune
+  const totalRemis = cles.reduce((n, c) => n + (c.nombreRemis ?? c.nombre), 0)
   const maj = (cid: string, f: (c: (typeof cles)[number]) => void) =>
     r.modifier((e) => {
       const c = e.cles?.find((x) => x.id === cid)
@@ -280,7 +282,7 @@ export function Cles() {
     <div className="saisie-piece">
       <Entete titre="Clés, badges et télécommandes" icone={<KeyRound size={24} />} edl={edl} sauvegarde={r.sauvegarde}>
         <span>
-          {total} remis{total > 1 ? 'es' : 'e'}
+          {commune ? `${total} restituée${total > 1 ? 's' : ''} · ${totalRemis} remise${totalRemis > 1 ? 's' : ''}` : `${total} remis${total > 1 ? 'es' : 'e'}`}
         </span>
       </Entete>
       <Verrou actif={edl.statut === 'signe'} signeLe={edl.cloture?.signeLe}>
@@ -294,7 +296,39 @@ export function Cles() {
       )}
 
       <section className="carte rubrique-carte">
-        {cles.map((c) => (
+        {commune && (
+          <p className="texte-doux" style={{ marginTop: 0 }}>
+            Pour chaque ligne : le nombre <strong>restitué</strong> par le locataire sortant (état des lieux de sortie) et le nombre <strong>remis</strong> au nouveau locataire (état des lieux d'entrée). Par défaut, le même nombre.
+          </p>
+        )}
+        {commune && cles.map((c) => (
+          <div key={c.id} className="ligne-cle-commune">
+            <input className="saisie" value={c.libelle} onChange={(e) => maj(c.id, (x) => void (x.libelle = e.target.value))} aria-label="Désignation" />
+            <span className="colonne-cle">
+              Restituées
+              <Compteur valeur={c.nombre} max={50} onChange={(v) => maj(c.id, (x) => void (x.nombre = v))} libelle={`${c.libelle} restituées`} />
+              {r.entree && (() => {
+                const remis = r.entree.cles?.find((x) => x.id === c.id)?.nombre
+                return remis !== undefined ? <span className={`pastille-entree ${c.nombre < remis ? 'pastille-degradation' : ''}`}>Remis à l'entrée : {remis}</span> : null
+              })()}
+            </span>
+            <span className="colonne-cle">
+              Remises
+              <Compteur valeur={c.nombreRemis ?? c.nombre} max={50} onChange={(v) => maj(c.id, (x) => void (x.nombreRemis = v))} libelle={`${c.libelle} remises`} />
+            </span>
+            <button
+              className="bouton-icone"
+              aria-label="Retirer"
+              onClick={async () => {
+                await supprimerPhotos(c.photoIds)
+                r.modifier((e) => void (e.cles = e.cles?.filter((x) => x.id !== c.id)))
+              }}
+            >
+              <Trash2 size={20} />
+            </button>
+          </div>
+        ))}
+        {!commune && cles.map((c) => (
           <div key={c.id} className="ligne-cle">
             <input className="saisie" value={c.libelle} onChange={(e) => maj(c.id, (x) => void (x.libelle = e.target.value))} aria-label="Désignation" />
             <Compteur valeur={c.nombre} max={50} onChange={(v) => maj(c.id, (x) => void (x.nombre = v))} libelle={c.libelle} />
@@ -524,11 +558,11 @@ export function BoiteAuxLettres() {
               </div>
               <div className="bloc ligne-compteur">
                 <span>
-                  <KeyRound size={16} /> Nombre de clés {edl.typeActe === 'sortie' ? 'restituées' : 'remises'}
+                  <KeyRound size={16} /> Nombre de clés {edl.commune ? 'restituées par le sortant' : edl.typeActe === 'sortie' ? 'restituées' : 'remises'}
                 </span>
                 <Compteur valeur={cle?.nombre ?? 0} max={20} onChange={fixerCles} libelle="Clés de boîte aux lettres" />
               </div>
-              <p className="texte-doux">Ce nombre figure aussi dans la rubrique « Clés et badges ».</p>
+              <p className="texte-doux">Ce nombre figure aussi dans la rubrique « Clés et badges »{edl.commune ? ', où se saisit aussi le nombre remis à l’entrant' : ''}.</p>
             </>
           )}
           <div className="bloc">
@@ -567,19 +601,45 @@ export function Observations() {
       <Verrou actif={edl.statut === 'signe'} signeLe={edl.cloture?.signeLe}>
       <section className="carte rubrique-carte">
         <Commentaire
-          label="Observations de l'opérateur"
+          label={edl.commune ? "Observations de l'opérateur (communes aux deux documents)" : "Observations de l'opérateur"}
           lignes={6}
           valeur={edl.observationsGenerales}
           placeholder="État général du bien, propreté, points d'attention, travaux prévus…"
           onChange={(v) => modifier((e) => void (e.observationsGenerales = v || undefined))}
         />
+        {edl.commune && <p className="texte-doux">Ces observations figurent dans les deux documents : n'y indiquez pas les coordonnées d'un locataire.</p>}
         <Commentaire
-          label={edl.typeBien === 'local' ? 'Remarques du preneur' : 'Remarques du locataire'}
+          label={edl.commune ? 'Remarques du locataire sortant (uniquement dans la sortie)' : edl.typeBien === 'local' ? 'Remarques du preneur' : 'Remarques du locataire'}
           lignes={4}
           valeur={edl.remarquesLocataire}
           placeholder="Réserves ou remarques que le locataire souhaite faire figurer."
           onChange={(v) => modifier((e) => void (e.remarquesLocataire = v || undefined))}
         />
+        {edl.commune && (
+          <>
+            <Commentaire
+              label="Remarques du locataire entrant (uniquement dans l'entrée)"
+              lignes={4}
+              valeur={edl.commune.remarquesEntrant}
+              placeholder="Réserves ou remarques du nouveau locataire."
+              onChange={(v) => modifier((e) => void (e.commune && (e.commune.remarquesEntrant = v || undefined)))}
+            />
+            <Commentaire
+              label="Observations de l'opérateur propres à la sortie"
+              lignes={3}
+              valeur={edl.commune.observationsSortie}
+              placeholder="ex. ménage de fin de bail à reprendre…"
+              onChange={(v) => modifier((e) => void (e.commune && (e.commune.observationsSortie = v || undefined)))}
+            />
+            <Commentaire
+              label="Observations de l'opérateur propres à l'entrée"
+              lignes={3}
+              valeur={edl.commune.observationsEntree}
+              placeholder="ex. travaux prévus après l'entrée…"
+              onChange={(v) => modifier((e) => void (e.commune && (e.commune.observationsEntree = v || undefined)))}
+            />
+          </>
+        )}
       </section>
       </Verrou>
     </div>

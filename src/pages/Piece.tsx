@@ -244,6 +244,7 @@ export default function Piece() {
               entree={entree === null || entree === undefined ? undefined : (entree.get(el.id) ?? null)}
               ouvert={ouvert === el.id}
               verrouille={verrouille}
+              commune={!!edl.commune}
               onBasculer={() => setOuvert(ouvert === el.id ? null : el.id)}
               maj={(f) => majElement(el.id, f)}
               onSuivant={() => elementSuivant(el.id)}
@@ -358,6 +359,8 @@ function CarteElement(props: {
   entree?: Element | null
   ouvert: boolean
   verrouille: boolean
+  /** Visite commune : observations propres à la sortie ou à l'entrée. */
+  commune?: boolean
   onBasculer: () => void
   maj: (f: (el: Element) => void) => void
   onSuivant: () => void
@@ -480,7 +483,14 @@ function CarteElement(props: {
             <Interrupteur libelle="Sous réserve" valeur={!!el.reserve} onChange={(v) => maj((x) => void (x.reserve = v || undefined))} />
           </div>
 
-          <ChampCommentaire label="Commentaire" valeur={el.commentaire} onChange={(v) => maj((x) => void (x.commentaire = v || undefined))} />
+          <ChampCommentaire label={props.commune ? 'Commentaire (repris dans les deux documents)' : 'Commentaire'} valeur={el.commentaire} onChange={(v) => maj((x) => void (x.commentaire = v || undefined))} />
+          {props.commune && (
+            <details className="notes-propres" open={!!(el.noteSortie || el.noteEntree)}>
+              <summary>Observations propres à un seul document (facultatif)</summary>
+              <ChampCommentaire label="Propre à la sortie (ex. contestation du sortant)" valeur={el.noteSortie} onChange={(v) => maj((x) => void (x.noteSortie = v || undefined))} />
+              <ChampCommentaire label="Réserve de l'entrant (uniquement dans l'entrée)" valeur={el.noteEntree} onChange={(v) => maj((x) => void (x.noteEntree = v || undefined))} />
+            </details>
+          )}
 
           {/* Photos */}
           <div className="bloc">

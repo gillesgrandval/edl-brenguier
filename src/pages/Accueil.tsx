@@ -8,7 +8,7 @@ import { db, demanderStockagePersistant } from '../db/base'
 import { adresseCourte, compteurFait, nomsLocataires, progressionGlobale } from '../db/edl'
 import { importerPreparation } from '../db/patrimoine'
 import type { Edl, Statut, TypeActe, TypeBien } from '../db/types'
-import { LIBELLE_ACTE, LIBELLE_BIEN, LIBELLE_STATUT, formatDate } from '../libelles'
+import { libelleActe, LIBELLE_BIEN, LIBELLE_STATUT, formatDate } from '../libelles'
 import { Badge, BarreProgression } from '../components/ui'
 import logoPrincipal from '../assets/charte/logo-principal.png'
 
@@ -32,7 +32,7 @@ export default function Accueil() {
     return (edls ?? []).filter((e) => {
       const annule = !!annulations?.has(e.id)
       if (statut === 'annule' ? !annule : statut !== 'tous' && (e.statut !== statut || annule)) return false
-      if (acte !== 'tous' && e.typeActe !== acte) return false
+      if (acte !== 'tous' && e.typeActe !== acte && !(e.commune && acte === 'entree')) return false
       if (bien !== 'tous' && e.typeBien !== bien) return false
       if (!q) return true
       const texte = [e.reference, adresseCourte(e), nomsLocataires(e), e.bien.lot].join(' ').toLowerCase()
@@ -210,7 +210,7 @@ function CarteEdl({ edl, annule, onOuvrir, onSupprimer }: { edl: Edl; annule?: b
       <div className="carte-edl-corps">
         <div className="carte-edl-haut">
           <span className="reference">{edl.reference}</span>
-          <Badge ton={edl.typeActe === 'sortie' ? 'bronze' : 'encre'}>{LIBELLE_ACTE[edl.typeActe]}</Badge>
+          <Badge ton={edl.typeActe === 'sortie' ? 'bronze' : 'encre'}>{libelleActe(edl)}</Badge>
           <Badge ton={tonStatut}>{LIBELLE_STATUT[edl.statut]}</Badge>
           {annule && <Badge ton="orange">Annulé</Badge>}
         </div>

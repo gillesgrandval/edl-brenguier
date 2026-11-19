@@ -864,3 +864,20 @@ input[type="search"]::-webkit-search-cancel-button { display: none; }
 .carte-edl-annule { opacity: .7; }
 .journal-ligne { padding: 10px 0; border-bottom: 1px solid var(--trait); font-size: 15px; }
 .journal-ligne:last-child { border-bottom: 0; }
+
+/* --- Visite commune (étape 13) --- */
+.bandeau-visite { display: flex; align-items: flex-start; gap: 12px; width: 100%; padding: 14px 16px; margin-bottom: 12px; border-left: 4px solid var(--accent); color: inherit; font: inherit; }
+.bandeau-visite > svg:first-child { flex: none; color: var(--accent); margin-top: 2px; }
+.partie-titre { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; }
+.notes-propres { margin-top: 14px; padding: 12px; border: 1px dashed var(--trait); border-radius: 12px; }
+.notes-propres > summary { cursor: pointer; font-weight: 700; }
+.ligne-cle-commune { display: grid; grid-template-columns: 1fr auto auto auto; gap: 10px; align-items: start; padding: 8px 0; border-bottom: 1px solid var(--trait); }
+.ligne-cle-commune .colonne-cle { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 13px; color: var(--texte-doux); }
+@media (max-width: 640px) { .ligne-cle-commune { grid-template-columns: 1fr 1fr; } .ligne-cle-commune > input { grid-column: 1 / -1; } }
+.documents-visite { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 720px) { .documents-visite { grid-template-columns: 1fr; } }
+.document-visite { padding: 16px; }
+.document-visite h3 { margin: 0 0 4px; }
+.document-visite ul { margin: 8px 0 0; padding-left: 20px; }
+.fuite { background: var(--erreur-fond); border: 1px solid var(--erreur-bord); color: var(--erreur-texte); border-radius: 12px; padding: 10px 14px; margin: 10px 0; }
+.ligne-cle-commune > input, .ligne-cle-commune > button { margin-top: 20px; }

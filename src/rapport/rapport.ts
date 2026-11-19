@@ -245,6 +245,11 @@ export async function genererRapport(source: Edl, avancement: Avancement = () =>
     M,
     y,
   )
+  if (edl.issuDeVisite) {
+    y += 5
+    police(9.5, 'italic', 'Nunito', GRIS)
+    doc.text(t(`Établi lors d'une visite commune ${edl.typeActe === 'sortie' ? 'sortie / entrée' : 'entrée / sortie'} (réf. ${edl.issuDeVisite.reference}).`), M, y)
+  }
   y += 4
   doc.setDrawColor(...OR)
   doc.setLineWidth(0.8)

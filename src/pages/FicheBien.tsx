@@ -9,7 +9,7 @@ import type { Bien, CategorieBien, EquipementConnu, GenreElement, TypeCompteur }
 import { MODELES } from '../modeles/pieces'
 import { GENRES } from '../modeles/comptes'
 import { compositionDepuisTableau } from '../patrimoine/importExcel'
-import { LIBELLE_ACTE, formatDate } from '../libelles'
+import { libelleActe, formatDate } from '../libelles'
 import { Champ, Confirmation, Interrupteur, Section } from '../components/ui'
 import Chargement from '../components/Chargement'
 
@@ -111,7 +111,7 @@ export default function FicheBien() {
             {historique.map((e) => (
               <button key={e.id} className="resultat-bien" onClick={() => navigate(`/edl/${e.id}`)}>
                 <span>
-                  {e.reference} · {LIBELLE_ACTE[e.typeActe]} · {formatDate(e.dateVisite)} · {e.statut === 'signe' ? 'signé' : 'en préparation'}
+                  {e.reference} · {libelleActe(e)} · {formatDate(e.dateVisite)} · {e.statut === 'signe' ? 'signé' : 'en préparation'}
                   {e.locataires.some((l) => l.nom.trim()) ? ` · ${e.locataires.filter((l) => l.nom.trim()).map((l) => l.nom).join(', ')}` : ''}
                 </span>
                 <ChevronRight size={18} />

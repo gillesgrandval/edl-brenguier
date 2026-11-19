@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { ArrowLeft, Building2, ChevronRight, ClipboardList, MapPin, PencilLine, Search, X } from 'lucide-react'
+import { ArrowLeft, ArrowRightLeft, Building2, ChevronRight, ClipboardList, MapPin, PencilLine, Search, X } from 'lucide-react'
 import { db, demanderStockagePersistant } from '../db/base'
 import { creerEdl, maintenantLocal } from '../db/edl'
 import { LIBELLE_CATEGORIE, bienVide, creerEdlDepuisBien, enregistrerBien, libelleBien } from '../db/patrimoine'
 import type { Bien } from '../db/types'
-import { LIBELLE_ACTE, formatDate } from '../libelles'
+import { creerVisiteDepuisBien, entreePrecedente } from '../db/visite'
+import { libelleActe, formatDate } from '../libelles'
 import { Champ, Section } from '../components/ui'
 import Chargement from '../components/Chargement'
 
@@ -47,6 +48,9 @@ export default function ChoixBien() {
   // Historique des états des lieux du bien choisi.
   const historique = useLiveQuery(async () => (bienId ? (await db.edls.where('bienId').equals(bienId).toArray()).filter((e) => !e.corbeille).sort((a, b) => b.dateVisite.localeCompare(a.dateVisite)) : []), [bienId])
 
+  // Visite commune : entrée signée précédente du bien (référence de la sortie).
+  const entreeAvant = useLiveQuery(async () => (bienId ? ((await entreePrecedente(bienId)) ?? null) : null), [bienId])
+
   if (biens === undefined) return <Chargement />
 
   function choisir(b: Bien) {
@@ -63,6 +67,14 @@ export default function ChoixBien() {
     await demanderStockagePersistant()
     const id = await creerEdlDepuisBien(choisi, date)
     navigate(`/edl/${id}`, { replace: true })
+  }
+
+  async function visiteCommune() {
+    if (!choisi || enCours) return
+    setEnCours(true)
+    await demanderStockagePersistant()
+    const id = await creerVisiteDepuisBien(choisi, date)
+    navigate(`/edl/${id}/infos`, { replace: true })
   }
 
   async function creerFiche() {
@@ -167,7 +179,7 @@ export default function ChoixBien() {
                   {historique.map((e) => (
                     <button key={e.id} className="resultat-bien" onClick={() => navigate(`/edl/${e.id}`)}>
                       <span>
-                        {e.reference} · {LIBELLE_ACTE[e.typeActe]} · {formatDate(e.dateVisite)} · {e.statut === 'signe' ? 'signé' : 'en préparation'}
+                        {e.reference} · {libelleActe(e)} · {formatDate(e.dateVisite)} · {e.statut === 'signe' ? 'signé' : 'en préparation'}
                       </span>
                       <ChevronRight size={18} />
                     </button>
@@ -179,6 +191,21 @@ export default function ChoixBien() {
               </div>
               <button className="bouton bouton-accent bouton-signer" onClick={preparer} disabled={enCours}>
                 Préparer l'état des lieux <ChevronRight size={22} />
+              </button>
+              <button className="carte tuile-ligne" style={{ marginTop: 12 }} onClick={visiteCommune} disabled={enCours || entreeAvant === undefined}>
+                <span className="tuile-ligne-icone">
+                  <ArrowRightLeft size={22} />
+                </span>
+                <span className="tuile-ligne-texte">
+                  <strong>Visite commune : sortie + entrée</strong>
+                  <span className="texte-doux">
+                    Le locataire sortant et le nouveau locataire le même jour : une seule visite, puis deux états des lieux séparés.{' '}
+                    {entreeAvant
+                      ? `Comparatif avec l'entrée ${entreeAvant.reference} du ${formatDate(entreeAvant.dateVisite)}.`
+                      : "Aucune entrée signée de ce bien dans l'application : sortie sans comparatif automatique."}
+                  </span>
+                </span>
+                <ChevronRight />
               </button>
             </div>
           )}

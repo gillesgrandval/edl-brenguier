@@ -4,7 +4,7 @@ import { Archive, KeyRound, Trash2, Undo2 } from 'lucide-react'
 import { db } from '../db/base'
 import { CODE_VALIDE, annulerEdl, codeDefini, definirCode, edlsLies, mettreALaCorbeille, retablirEdl } from '../db/admin'
 import type { Annulation, Edl } from '../db/types'
-import { LIBELLE_ACTE, LIBELLE_STATUT, formatDate } from '../libelles'
+import { libelleActe, LIBELLE_STATUT, formatDate } from '../libelles'
 import { adresseCourte } from '../db/edl'
 
 /** Fenêtre modale simple, ouverte dès son affichage. */
@@ -93,7 +93,7 @@ export function ResumeEdl({ edl }: { edl: Edl }) {
       <dt>Date</dt>
       <dd>{formatDate(edl.dateVisite, true)}</dd>
       <dt>Type</dt>
-      <dd>{LIBELLE_ACTE[edl.typeActe]}</dd>
+      <dd>{libelleActe(edl)}</dd>
       <dt>Statut</dt>
       <dd>
         {LIBELLE_STATUT[edl.statut]}

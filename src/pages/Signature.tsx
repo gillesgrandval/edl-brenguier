@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import {
   AlarmSmoke,
@@ -23,7 +23,7 @@ import { useEdl } from '../hooks/useEdl'
 import { compteurFait, etatRubriques, infosManquantes, normaliser, progressionPiece } from '../db/edl'
 import { empreinteLisible, signatairesAttendus, signerEdl, verifierEmpreinte, type SignatureSaisie } from '../db/cloture'
 import type { Edl, Signataire } from '../db/types'
-import { LIBELLE_ACTE, formatDate } from '../libelles'
+import { libelleActe, formatDate } from '../libelles'
 import { Champ, Confirmation, Interrupteur, Section } from '../components/ui'
 import { BoutonDictee } from '../components/Dictee'
 import PaveSignature from '../components/PaveSignature'
@@ -43,6 +43,8 @@ export default function Signature() {
   const enBase = useLiveQuery(async () => (id ? ((await db.edls.get(id)) ?? null) : null), [id])
   if (enBase === undefined) return <Chargement />
   if (enBase === null) return <Chargement introuvable />
+  // Une visite commune ne se signe pas : elle devient d'abord deux états des lieux distincts.
+  if (enBase.commune) return <Navigate to={`/edl/${enBase.id}/terminer`} replace />
   return enBase.statut === 'signe' ? <VueSignee edl={normaliser(enBase)} /> : <AvantSignature id={enBase.id} />
 }
 
@@ -60,7 +62,7 @@ function EnTete(props: { edl: Edl; titre: string }) {
         </div>
         <div className="piece-entete-progression">
           <span>
-            {props.edl.reference} · {LIBELLE_ACTE[props.edl.typeActe]}
+            {props.edl.reference} · {libelleActe(props.edl)}
           </span>
         </div>
       </div>

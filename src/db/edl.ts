@@ -85,8 +85,9 @@ export function infosManquantes(edl: Edl): string[] {
   if (!edl.bien.ville.trim()) manque.push('Ville')
   if (!edl.bailleur.raisonSociale.trim()) manque.push('Bailleur')
   if (!edl.operateur.nom.trim()) manque.push("Nom de l'opérateur")
-  if (!edl.locataires.some((l) => l.nom.trim())) manque.push('Locataire')
-  if (edl.typeActe === 'sortie' && !edl.nouvelleAdresseLocataire?.trim()) manque.push('Nouvelle adresse du locataire')
+  if (!edl.locataires.some((l) => l.nom.trim())) manque.push(edl.commune ? 'Locataire sortant' : 'Locataire')
+  if (edl.commune && !edl.commune.entrants.some((l) => l.nom.trim())) manque.push('Locataire entrant')
+  if (edl.typeActe === 'sortie' && !edl.nouvelleAdresseLocataire?.trim()) manque.push(edl.commune ? 'Nouvelle adresse du sortant' : 'Nouvelle adresse du locataire')
   return manque
 }
 
@@ -163,13 +164,16 @@ export function normaliser(edl: Edl): Edl {
   }
 }
 
+const noms = (liste: Edl['locataires']) =>
+  liste
+    .map((l) => [l.prenom, l.nom].filter(Boolean).join(' ').trim())
+    .filter(Boolean)
+    .join(', ')
+
+/** Noms des locataires (visite commune : sortant → entrant). Affichage interne uniquement, jamais dans un PDF. */
 export function nomsLocataires(edl: Edl): string {
-  return (
-    edl.locataires
-      .map((l) => [l.prenom, l.nom].filter(Boolean).join(' ').trim())
-      .filter(Boolean)
-      .join(', ') || 'Locataire non renseigné'
-  )
+  if (edl.commune) return `Sortant : ${noms(edl.locataires) || 'à renseigner'} → Entrant : ${noms(edl.commune.entrants) || 'à renseigner'}`
+  return noms(edl.locataires) || 'Locataire non renseigné'
 }
 
 export function adresseCourte(edl: Edl): string {

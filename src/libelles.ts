@@ -7,6 +7,11 @@ export const LIBELLE_ACTE: Record<TypeActe, string> = {
   a_definir: 'Type à définir',
 }
 
+/** Libellé du type d'un état des lieux (visite commune comprise). */
+export function libelleActe(edl: { typeActe: TypeActe; commune?: unknown }): string {
+  return edl.commune ? 'Sortie + entrée' : LIBELLE_ACTE[edl.typeActe]
+}
+
 export const LIBELLE_BIEN: Record<TypeBien, string> = {
   appartement: 'Appartement',
   maison: 'Maison',

@@ -62,6 +62,10 @@ export interface Element {
   observations: string[]
   localisation?: string
   commentaire?: string
+  /** Visite commune : observation reprise UNIQUEMENT dans l'état des lieux de sortie. */
+  noteSortie?: string
+  /** Visite commune : observation (réserve de l'entrant) reprise UNIQUEMENT dans l'état des lieux d'entrée. */
+  noteEntree?: string
   photoIds: string[]
 }
 
@@ -181,6 +185,25 @@ export interface Edl {
   cloture?: Cloture
   /** Brouillon mis à la corbeille (restaurable). Jamais pour un état des lieux signé. */
   corbeille?: { le: string; motif?: string }
+  /**
+   * Visite commune (sortie + entrée le même jour) : fiche de travail, jamais signée.
+   * `locataires` y désigne les locataires SORTANTS. « Terminer la visite » la remplace
+   * par deux états des lieux distincts (sortie et entrée).
+   */
+  commune?: VisiteCommune
+  /** État des lieux issu d'une visite commune : référence de la visite et document jumeau. */
+  issuDeVisite?: { reference: string; autreId: string; autreReference: string }
+}
+
+/** Données propres à une visite commune (rangées à part pour ne jamais être mélangées). */
+export interface VisiteCommune {
+  /** Locataires entrants (leurs coordonnées n'iront que dans l'état des lieux d'entrée). */
+  entrants: Personne[]
+  /** Remarques du locataire entrant (le champ `remarquesLocataire` est celui du sortant). */
+  remarquesEntrant?: string
+  /** Observations générales propres à chaque document (en plus des observations communes). */
+  observationsSortie?: string
+  observationsEntree?: string
 }
 
 /** Oui / non / non vérifié (absent = non renseigné). */
@@ -216,6 +239,7 @@ export type ActionJournal =
   | 'code_defini'
   | 'code_modifie'
   | 'code_reinitialise'
+  | 'visite_terminee'
 
 /** Trace des suppressions, annulations et changements de code (jamais effacée). */
 export interface EntreeJournal {
@@ -292,7 +316,10 @@ export interface ReleveCompteur {
 export interface Cle {
   id: string
   libelle: string
+  /** Nombre remis (entrée) ou restitué (sortie). Visite commune : restituées par le sortant. */
   nombre: number
+  /** Visite commune : nombre remis au locataire entrant (absent = même nombre que restitué). */
+  nombreRemis?: number
   commentaire?: string
   photoIds: string[]
 }

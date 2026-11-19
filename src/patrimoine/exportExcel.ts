@@ -8,7 +8,7 @@
 import { db } from '../db/base'
 import { LIBELLE_CATEGORIE } from '../db/patrimoine'
 import type { Bien, TypeCompteur } from '../db/types'
-import { LIBELLE_ACTE, LIBELLE_BIEN, LIBELLE_STATUT, formatDate } from '../libelles'
+import { libelleActe, LIBELLE_BIEN, LIBELLE_STATUT, formatDate } from '../libelles'
 import { CHAMPS, type CleChamp } from './importExcel'
 
 type Cellule = { value: string | number; fontWeight?: 'bold' } | null
@@ -31,7 +31,7 @@ export async function exporterEtatsDesLieux(): Promise<Blob> {
     entetes.map(titre),
     ...edls.map((e) => [
       cel(e.reference),
-      cel(LIBELLE_ACTE[e.typeActe]),
+      cel(libelleActe(e)),
       cel(annulations.has(e.id) ? `${LIBELLE_STATUT[e.statut]} — annulé (${annulations.get(e.id)!.motif})` : LIBELLE_STATUT[e.statut]),
       cel(formatDate(e.dateVisite, e.dateVisite.length > 10)),
       cel(e.bien.adresse),

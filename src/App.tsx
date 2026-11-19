@@ -14,6 +14,7 @@ import Comparatif from './pages/Comparatif'
 import Parametres from './pages/Parametres'
 import Aide from './pages/Aide'
 import Corbeille from './pages/Corbeille'
+import TerminerVisite from './pages/TerminerVisite'
 import { BoiteAuxLettres, Cles, Compteurs, Detecteur, Observations } from './pages/Rubriques'
 import MiseAJour from './components/MiseAJour'
 import logoSignatureBlanc from './assets/charte/logo-signature-blanc.png'
@@ -74,6 +75,7 @@ export default function App() {
           <Route path="/edl/:id/observations" element={<Observations />} />
           <Route path="/edl/:id/signature" element={<Signature />} />
           <Route path="/edl/:id/comparatif" element={<Comparatif />} />
+          <Route path="/edl/:id/terminer" element={<TerminerVisite />} />
           <Route path="*" element={<Accueil />} />
         </Routes>
       </main>

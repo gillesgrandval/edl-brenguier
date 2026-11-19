@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import {
+  ArrowRightLeft,
   ArrowLeft,
   ArrowRight,
   Building2,
@@ -130,6 +131,18 @@ function EtapeType({ edl, modifier }: Props) {
   return (
     <>
       <Section titre="Type d'état des lieux">
+        {edl.commune ? (
+          <div className="carte bandeau-visite">
+            <ArrowRightLeft size={20} />
+            <div>
+              <strong>Visite commune : sortie + entrée</strong>
+              <p className="texte-doux" style={{ margin: '4px 0 0' }}>
+                Une seule visite ; à la fin, deux états des lieux séparés sont créés (sortie et entrée), chacun signé avec ses propres parties.
+              </p>
+            </div>
+          </div>
+        ) : (
+        <>
         {edl.typeActe === 'a_definir' && <p className="attention" style={{ marginTop: 0 }}>Type encore à définir : choisissez-le ci-dessous (obligatoire avant la signature).</p>}
         <Tuiles<TypeActe>
           valeur={edl.typeActe}
@@ -140,6 +153,8 @@ function EtapeType({ edl, modifier }: Props) {
             { valeur: 'pre', libelle: 'Pré-état des lieux', icone: <DoorOpen size={30} />, detail: 'Visite préalable' },
           ]}
         />
+        </>
+        )}
       </Section>
       <Section titre="Type de bien">
         {verrouBien ? (
@@ -289,41 +304,67 @@ function EtapeParties({ edl, modifier }: Props) {
         </details>
       </Section>
 
-      <Section
-        titre={edl.locataires.length > 1 ? 'Locataires' : 'Locataire'}
-        action={
-          <button className="bouton bouton-discret bouton-petit" onClick={() => modifier((e) => void e.locataires.push({ id: nouvelId(), nom: '' }))}>
-            <UserPlus size={18} /> Ajouter
-          </button>
-        }
+      <BlocLocataires
+        titre={edl.commune ? (edl.locataires.length > 1 ? 'Locataires sortants' : 'Locataire sortant') : edl.locataires.length > 1 ? 'Locataires' : 'Locataire'}
+        aide={edl.commune ? "Figure uniquement dans l'état des lieux de sortie." : undefined}
+        preneur={edl.typeBien === 'local'}
+        liste={edl.locataires}
+        maj={(f) => modifier((e) => f(e.locataires))}
       >
-        {edl.locataires.map((l, i) => (
-          <div key={l.id} className="carte carte-insert" style={{ marginBottom: 12 }}>
-            <div className="carte-insert-titre">
-              <strong>{edl.typeBien === 'local' ? `Preneur ${i + 1}` : `Locataire ${i + 1}`}</strong>
-              {edl.locataires.length > 1 && (
-                <button className="bouton-icone" aria-label="Retirer ce locataire" onClick={() => modifier((e) => void e.locataires.splice(i, 1))}>
-                  <Trash2 size={20} />
-                </button>
-              )}
-            </div>
-            <div className="grille">
-              <Champ label="Nom ou raison sociale" valeur={l.nom} onChange={(v) => modifier((e) => void (e.locataires[i].nom = v))} />
-              <Champ label="Prénom" valeur={l.prenom} onChange={(v) => modifier((e) => void (e.locataires[i].prenom = v))} />
-              <Champ label="Téléphone" type="tel" inputMode="tel" valeur={l.telephone} onChange={(v) => modifier((e) => void (e.locataires[i].telephone = v))} />
-              <Champ label="E-mail" type="email" inputMode="email" valeur={l.email} onChange={(v) => modifier((e) => void (e.locataires[i].email = v))} aide="Pour lui envoyer le PDF signé" />
-            </div>
-          </div>
-        ))}
         {edl.typeActe === 'sortie' && (
           <ZoneTexte
-            label="Nouvelle adresse du locataire (obligatoire en sortie)"
+            label={edl.commune ? 'Nouvelle adresse du locataire sortant (obligatoire en sortie)' : 'Nouvelle adresse du locataire (obligatoire en sortie)'}
             valeur={edl.nouvelleAdresseLocataire}
             onChange={(v) => modifier((e) => void (e.nouvelleAdresseLocataire = v))}
           />
         )}
-      </Section>
+      </BlocLocataires>
+      {edl.commune && (
+        <BlocLocataires
+          titre={edl.commune.entrants.length > 1 ? 'Locataires entrants' : 'Locataire entrant'}
+          aide="Figure uniquement dans l'état des lieux d'entrée. Ses coordonnées ne sont jamais reprises dans la sortie."
+          preneur={edl.typeBien === 'local'}
+          liste={edl.commune.entrants}
+          maj={(f) => modifier((e) => e.commune && f(e.commune.entrants))}
+        />
+      )}
     </>
+  )
+}
+
+/** Liste de locataires (ou, en visite commune, de sortants / d'entrants). */
+function BlocLocataires(props: { titre: string; aide?: string; preneur: boolean; liste: Edl['locataires']; maj: (f: (l: Edl['locataires']) => void) => void; children?: React.ReactNode }) {
+  const { liste, maj } = props
+  return (
+    <Section
+      titre={props.titre}
+      action={
+        <button className="bouton bouton-discret bouton-petit" onClick={() => maj((l) => void l.push({ id: nouvelId(), nom: '' }))}>
+          <UserPlus size={18} /> Ajouter
+        </button>
+      }
+    >
+      {props.aide && <p className="texte-doux" style={{ marginTop: 0 }}>{props.aide}</p>}
+      {liste.map((l, i) => (
+        <div key={l.id} className="carte carte-insert" style={{ marginBottom: 12 }}>
+          <div className="carte-insert-titre">
+            <strong>{props.preneur ? `Preneur ${i + 1}` : `Locataire ${i + 1}`}</strong>
+            {liste.length > 1 && (
+              <button className="bouton-icone" aria-label="Retirer ce locataire" onClick={() => maj((x) => void x.splice(i, 1))}>
+                <Trash2 size={20} />
+              </button>
+            )}
+          </div>
+          <div className="grille">
+            <Champ label="Nom ou raison sociale" valeur={l.nom} onChange={(v) => maj((x) => void (x[i].nom = v))} />
+            <Champ label="Prénom" valeur={l.prenom} onChange={(v) => maj((x) => void (x[i].prenom = v))} />
+            <Champ label="Téléphone" type="tel" inputMode="tel" valeur={l.telephone} onChange={(v) => maj((x) => void (x[i].telephone = v))} />
+            <Champ label="E-mail" type="email" inputMode="email" valeur={l.email} onChange={(v) => maj((x) => void (x[i].email = v))} aide="Pour lui envoyer le PDF signé" />
+          </div>
+        </div>
+      ))}
+      {props.children}
+    </Section>
   )
 }
 
