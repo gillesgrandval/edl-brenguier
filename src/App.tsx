@@ -13,7 +13,8 @@ import ImportExcel from './pages/ImportExcel'
 import Comparatif from './pages/Comparatif'
 import Parametres from './pages/Parametres'
 import Aide from './pages/Aide'
-import { Cles, Compteurs, Detecteur, Observations } from './pages/Rubriques'
+import Corbeille from './pages/Corbeille'
+import { BoiteAuxLettres, Cles, Compteurs, Detecteur, Observations } from './pages/Rubriques'
 import MiseAJour from './components/MiseAJour'
 import logoSignatureBlanc from './assets/charte/logo-signature-blanc.png'
 import { useEnLigne } from './hooks/useEnLigne'
@@ -59,6 +60,7 @@ export default function App() {
           <Route path="/nouveau" element={<ChoixBien />} />
           <Route path="/parametres" element={<Parametres />} />
           <Route path="/aide" element={<Aide />} />
+          <Route path="/corbeille" element={<Corbeille />} />
           <Route path="/patrimoine" element={<Patrimoine />} />
           <Route path="/patrimoine/import" element={<ImportExcel />} />
           <Route path="/patrimoine/:id" element={<FicheBien />} />
@@ -68,6 +70,7 @@ export default function App() {
           <Route path="/edl/:id/compteurs" element={<Compteurs />} />
           <Route path="/edl/:id/cles" element={<Cles />} />
           <Route path="/edl/:id/detecteur" element={<Detecteur />} />
+          <Route path="/edl/:id/boite-aux-lettres" element={<BoiteAuxLettres />} />
           <Route path="/edl/:id/observations" element={<Observations />} />
           <Route path="/edl/:id/signature" element={<Signature />} />
           <Route path="/edl/:id/comparatif" element={<Comparatif />} />

@@ -78,6 +78,8 @@ export async function creerSortieDepuisEntree(entree: Edl): Promise<string> {
     compteurs: (e.compteurs ?? []).map((c) => ({ id: c.id, type: c.type, libelle: c.libelle, numero: c.numero, nonApplicable: c.nonApplicable, photoIds: [] })),
     // Mêmes clés ; le nombre restitué est à compter (le nombre remis à l'entrée est rappelé à l'écran).
     cles: (e.cles ?? []).map((c) => ({ id: c.id, libelle: c.libelle, nombre: 0, photoIds: [] })),
+    // Boîte aux lettres : identification reprise, constat à refaire.
+    boiteAuxLettres: { numero: e.boiteAuxLettres?.numero, emplacement: e.boiteAuxLettres?.emplacement, photoIds: [] },
     detecteur: { photoIds: [] },
   }
   await db.edls.add(sortie)

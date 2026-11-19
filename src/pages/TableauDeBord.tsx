@@ -14,12 +14,16 @@ import {
   Building2,
   Gauge,
   Lock,
+  Archive,
+  Undo2,
 } from 'lucide-react'
 import { db } from '../db/base'
 import type { Edl } from '../db/types'
-import { adresseCourte, compteurFait, infosManquantes, nomsLocataires, progressionGlobale, normaliser, progressionPiece, supprimerEdl } from '../db/edl'
+import { adresseCourte, compteurFait, infosManquantes, nomsLocataires, progressionGlobale, normaliser, progressionPiece } from '../db/edl'
+import { restaurerDeLaCorbeille } from '../db/admin'
+import { BandeauAnnule, DialogueSuppression } from '../components/Admin'
 import { LIBELLE_ACTE, LIBELLE_BIEN, formatDate } from '../libelles'
-import { Badge, BarreProgression, Confirmation, Section } from '../components/ui'
+import { Badge, BarreProgression, Section } from '../components/ui'
 import Chargement from '../components/Chargement'
 import { ICONE_BIEN } from '../components/icones'
 import BlocPieces from '../components/BlocPieces'
@@ -38,6 +42,7 @@ export default function TableauDeBord() {
     return e ? normaliser(e) : null
   }, [id])
   const [confirmer, setConfirmer] = useState(false)
+  const annulation = useLiveQuery(async () => (id ? ((await db.annulations.get(id)) ?? null) : null), [id])
 
   if (edl === undefined) return <Chargement />
   if (edl === null) return <Chargement introuvable />
@@ -72,6 +77,16 @@ export default function TableauDeBord() {
           </p>
         </div>
       </div>
+
+      {annulation && <BandeauAnnule annulation={annulation} />}
+      {edl.corbeille && (
+        <div className="bandeau-annule">
+          <Trash2 size={18} /> <strong>Dans la corbeille</strong> depuis le {formatDate(edl.corbeille.le, true)}
+          <button className="bouton bouton-discret bouton-petit" onClick={() => restaurerDeLaCorbeille(edl.id)}>
+            <Undo2 size={18} /> Restaurer
+          </button>
+        </div>
+      )}
 
       <div className="carte tdb-progression">
         <div className="tdb-pourcent">
@@ -197,32 +212,35 @@ export default function TableauDeBord() {
         </div>
       </Section>
 
-      {edl.statut !== 'signe' && (
+      {!edl.corbeille && (
         <div className="zone-danger">
           <button className="bouton bouton-discret bouton-danger-texte" onClick={() => setConfirmer(true)}>
-            <Trash2 size={20} /> Supprimer cet état des lieux
+            {edl.statut !== 'signe' ? (
+              <>
+                <Trash2 size={20} /> Supprimer cet état des lieux
+              </>
+            ) : annulation ? (
+              <>
+                <Undo2 size={20} /> Lever l'annulation
+              </>
+            ) : (
+              <>
+                <Archive size={20} /> Annuler cet état des lieux (archiver)
+              </>
+            )}
           </button>
         </div>
       )}
 
-      <Confirmation
-        ouvert={confirmer}
-        danger
-        titre="Supprimer cet état des lieux ?"
-        message={
-          <>
-            <strong>{edl.reference}</strong> — {adresseCourte(edl)}
-            <br />
-            Toutes ses saisies et photos seront effacées de la tablette. Cette action est définitive.
-          </>
-        }
-        libelleOk="Supprimer définitivement"
-        onAnnuler={() => setConfirmer(false)}
-        onOk={async () => {
-          await supprimerEdl(edl.id)
-          navigate('/', { replace: true })
-        }}
-      />
+      {confirmer && (
+        <DialogueSuppression
+          edl={edl}
+          onFermer={() => setConfirmer(false)}
+          onFait={() => {
+            if (edl.statut !== 'signe') navigate('/', { replace: true })
+          }}
+        />
+      )}
     </>
   )
 }

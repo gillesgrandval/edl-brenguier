@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Plus, Search, ChevronRight, HardDrive, CloudOff, ShieldCheck, ClipboardList, X, FileUp, CalendarClock, Gauge } from 'lucide-react'
+import { Plus, Search, ChevronRight, HardDrive, CloudOff, ShieldCheck, ClipboardList, X, FileUp, CalendarClock, Gauge, Trash2, Archive } from 'lucide-react'
+import { DialogueSuppression } from '../components/Admin'
 import { ICONE_BIEN } from '../components/icones'
 import { db, demanderStockagePersistant } from '../db/base'
 import { adresseCourte, compteurFait, nomsLocataires, progressionGlobale } from '../db/edl'
@@ -15,23 +16,29 @@ type Filtre<T> = T | 'tous'
 
 export default function Accueil() {
   const navigate = useNavigate()
-  const edls = useLiveQuery(() => db.edls.orderBy('modifieLe').reverse().toArray(), [])
+  // Les brouillons mis à la corbeille ne figurent pas dans les listes (voir Paramètres → Corbeille).
+  const tous = useLiveQuery(() => db.edls.orderBy('modifieLe').reverse().toArray(), [])
+  const edls = useMemo(() => tous?.filter((e) => !e.corbeille), [tous])
+  const nbCorbeille = (tous?.length ?? 0) - (edls?.length ?? 0)
+  const annulations = useLiveQuery(async () => new Map((await db.annulations.toArray()).map((a) => [a.edlId, a])), [])
+  const [aSupprimer, setASupprimer] = useState<Edl | null>(null)
   const [recherche, setRecherche] = useState('')
-  const [statut, setStatut] = useState<Filtre<Statut>>('tous')
+  const [statut, setStatut] = useState<Filtre<Statut | 'annule'>>('tous')
   const [acte, setActe] = useState<Filtre<TypeActe>>('tous')
   const [bien, setBien] = useState<Filtre<TypeBien>>('tous')
 
   const filtres = useMemo(() => {
     const q = recherche.trim().toLowerCase()
     return (edls ?? []).filter((e) => {
-      if (statut !== 'tous' && e.statut !== statut) return false
+      const annule = !!annulations?.has(e.id)
+      if (statut === 'annule' ? !annule : statut !== 'tous' && (e.statut !== statut || annule)) return false
       if (acte !== 'tous' && e.typeActe !== acte) return false
       if (bien !== 'tous' && e.typeBien !== bien) return false
       if (!q) return true
       const texte = [e.reference, adresseCourte(e), nomsLocataires(e), e.bien.lot].join(' ').toLowerCase()
       return texte.includes(q)
     })
-  }, [edls, recherche, statut, acte, bien])
+  }, [edls, annulations, recherche, statut, acte, bien])
 
   // Nouvel état des lieux : choix d'un bien du patrimoine (ou saisie d'un nouveau bien).
   const nouveau = () => navigate('/nouveau')
@@ -114,7 +121,7 @@ export default function Accueil() {
           </h2>
           <div className="liste-edl">
             {aRealiser.map((e) => (
-              <CarteEdl key={e.id} edl={e} onOuvrir={() => navigate(`/edl/${e.id}`)} />
+              <CarteEdl key={e.id} edl={e} annule={annulations?.has(e.id)} onOuvrir={() => navigate(`/edl/${e.id}`)} onSupprimer={() => setASupprimer(e)} />
             ))}
           </div>
         </section>
@@ -142,7 +149,7 @@ export default function Accueil() {
             <GroupeFiltre
               valeur={statut}
               onChange={setStatut}
-              options={[['tous', 'Tous'], ['brouillon', 'Brouillons'], ['en_cours', 'En cours'], ['signe', 'Signés']]}
+              options={[['tous', 'Tous'], ['brouillon', 'Brouillons'], ['en_cours', 'En cours'], ['signe', 'Signés'], ['annule', 'Annulés']]}
             />
             <GroupeFiltre valeur={acte} onChange={setActe} options={[['tous', 'Entrée et sortie'], ['entree', 'Entrées'], ['sortie', 'Sorties']]} />
             <GroupeFiltre
@@ -154,7 +161,7 @@ export default function Accueil() {
 
           <div className="liste-edl">
             {filtres.map((e) => (
-              <CarteEdl key={e.id} edl={e} onOuvrir={() => navigate(`/edl/${e.id}`)} />
+              <CarteEdl key={e.id} edl={e} annule={annulations?.has(e.id)} onOuvrir={() => navigate(`/edl/${e.id}`)} onSupprimer={() => setASupprimer(e)} />
             ))}
             {filtres.length === 0 && (
               <div className="vide">
@@ -163,9 +170,15 @@ export default function Accueil() {
               </div>
             )}
           </div>
+          {nbCorbeille > 0 && (
+            <button className="bouton bouton-discret bouton-petit" style={{ marginTop: 12 }} onClick={() => navigate('/corbeille')}>
+              <Trash2 size={18} /> Corbeille ({nbCorbeille})
+            </button>
+          )}
         </>
       )}
 
+      {aSupprimer && <DialogueSuppression edl={aSupprimer} onFermer={() => setASupprimer(null)} />}
       <RappelSauvegarde />
       <EtatTablette />
     </>
@@ -184,12 +197,13 @@ function GroupeFiltre<T extends string>(props: { valeur: T; onChange: (v: T) => 
   )
 }
 
-function CarteEdl({ edl, onOuvrir }: { edl: Edl; onOuvrir: () => void }) {
+function CarteEdl({ edl, annule, onOuvrir, onSupprimer }: { edl: Edl; annule?: boolean; onOuvrir: () => void; onSupprimer: () => void }) {
   const Icone = ICONE_BIEN[edl.typeBien]
   const pct = progressionGlobale(edl)
   const tonStatut = edl.statut === 'signe' ? 'vert' : edl.statut === 'en_cours' ? 'orange' : 'gris'
   return (
-    <button className={`carte carte-edl acte-${edl.typeActe}`} onClick={onOuvrir}>
+    <div className="ligne-edl">
+    <button className={`carte carte-edl acte-${edl.typeActe} ${annule ? 'carte-edl-annule' : ''}`} onClick={onOuvrir}>
       <div className="carte-edl-icone">
         <Icone size={26} />
       </div>
@@ -198,6 +212,7 @@ function CarteEdl({ edl, onOuvrir }: { edl: Edl; onOuvrir: () => void }) {
           <span className="reference">{edl.reference}</span>
           <Badge ton={edl.typeActe === 'sortie' ? 'bronze' : 'encre'}>{LIBELLE_ACTE[edl.typeActe]}</Badge>
           <Badge ton={tonStatut}>{LIBELLE_STATUT[edl.statut]}</Badge>
+          {annule && <Badge ton="orange">Annulé</Badge>}
         </div>
         <div className="carte-edl-adresse">{adresseCourte(edl)}</div>
         <div className="carte-edl-detail">
@@ -216,6 +231,15 @@ function CarteEdl({ edl, onOuvrir }: { edl: Edl; onOuvrir: () => void }) {
       </div>
       <ChevronRight className="carte-edl-chevron" />
     </button>
+    <button
+      className="bouton-action-edl"
+      onClick={onSupprimer}
+      aria-label={edl.statut === 'signe' ? (annule ? `Lever l'annulation de ${edl.reference}` : `Annuler ${edl.reference}`) : `Supprimer ${edl.reference}`}
+      title={edl.statut === 'signe' ? 'Annuler (archiver)' : 'Supprimer (corbeille)'}
+    >
+      {edl.statut === 'signe' ? <Archive size={20} /> : <Trash2 size={20} />}
+    </button>
+    </div>
   )
 }
 

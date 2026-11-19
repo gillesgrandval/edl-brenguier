@@ -19,7 +19,7 @@
 
 import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate'
 import { db, ecrireMeta, lireMeta } from './base'
-import type { Bien, Edl, Entite, Meta, Photo, SignatureImage } from './types'
+import type { Annulation, Bien, Edl, EntreeJournal, Entite, Meta, Photo, SignatureImage } from './types'
 
 const FORMAT = 'edl-brenguier-sauvegarde'
 export const CLE_DERNIERE = 'derniere-sauvegarde'
@@ -36,6 +36,9 @@ interface Donnees {
   meta: Meta[]
   photos: PhotoSansImages[]
   signatures: Omit<SignatureImage, 'image'>[]
+  /** Journal des suppressions et annulations des états des lieux signés (absents des sauvegardes antérieures à la 1.2.0). */
+  journal?: EntreeJournal[]
+  annulations?: Annulation[]
 }
 
 const octets = async (b: Blob) => new Uint8Array(await b.arrayBuffer())
@@ -46,7 +49,7 @@ export interface Avancement {
 
 /** Fabrique la sauvegarde complète (fichier .zip). */
 export async function creerSauvegarde(avancement: Avancement = () => {}): Promise<{ blob: Blob; nom: string; resume: string }> {
-  const [edls, biens, entites, meta, photos, signatures] = await Promise.all([db.edls.toArray(), db.biens.toArray(), db.entites.toArray(), db.meta.toArray(), db.photos.toArray(), db.signatures.toArray()])
+  const [edls, biens, entites, meta, photos, signatures, journal, annulations] = await Promise.all([db.edls.toArray(), db.biens.toArray(), db.entites.toArray(), db.meta.toArray(), db.photos.toArray(), db.signatures.toArray(), db.journal.toArray(), db.annulations.toArray()])
   const fichiers: Zippable = {}
   let i = 0
   for (const p of photos) {
@@ -72,6 +75,8 @@ export async function creerSauvegarde(avancement: Avancement = () => {}): Promis
     meta: meta.filter((m) => m.cle !== CLE_DERNIERE),
     photos: photos.map(({ image: _i, miniature: _m, base, ...reste }) => ({ ...reste, aBase: !!base })),
     signatures: signatures.map(({ image: _i, ...reste }) => reste),
+    journal,
+    annulations,
   }
   fichiers['donnees.json'] = strToU8(JSON.stringify(donnees))
   const zip = zipSync(fichiers)
@@ -108,7 +113,11 @@ export async function restaurerSauvegarde(fichier: Blob): Promise<BilanRestaurat
   const bilan: BilanRestauration = { ajoutes: 0, misAJour: 0, inchanges: 0, signesProteges: 0, photos: 0 }
   const plusRecent = (a?: string, b?: string) => (a ?? '') > (b ?? '')
 
-  await db.transaction('rw', [db.edls, db.biens, db.entites, db.meta, db.photos, db.signatures], async () => {
+  await db.transaction('rw', [db.edls, db.biens, db.entites, db.meta, db.photos, db.signatures, db.journal, db.annulations], async () => {
+    // Journal : on ajoute les traces manquantes, sans jamais en retirer.
+    for (const j of d.journal ?? []) if (!(await db.journal.get(j.id))) await db.journal.add(j)
+    // Annulations : reprises si l'appareil n'en a pas déjà une pour cet état des lieux.
+    for (const a of d.annulations ?? []) if (!(await db.annulations.get(a.edlId))) await db.annulations.add(a)
     for (const e of d.edls) {
       const actuel = await db.edls.get(e.id)
       if (!actuel) {

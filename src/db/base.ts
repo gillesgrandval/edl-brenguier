@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
-import type { Bien, Edl, Entite, Meta, Photo, SignatureImage } from './types'
+import type { Annulation, Bien, Edl, EntreeJournal, Entite, Meta, Photo, SignatureImage } from './types'
 
 /**
  * Base de données interne à la tablette (IndexedDB).
@@ -15,6 +15,8 @@ export const db = new Dexie('edl-brenguier') as Dexie & {
   meta: EntityTable<Meta, 'cle'>
   signatures: EntityTable<SignatureImage, 'id'>
   biens: EntityTable<Bien, 'id'>
+  journal: EntityTable<EntreeJournal, 'id'>
+  annulations: EntityTable<Annulation, 'edlId'>
 }
 
 db.version(1).stores({
@@ -33,6 +35,12 @@ db.version(2).stores({
 db.version(3).stores({
   edls: 'id, reference, statut, typeActe, typeBien, modifieLe, bienId',
   biens: 'id, identifiantExterne, ville, categorie, residence, societe, lot',
+})
+
+// Version 4 (étape 12) : journal des suppressions et annulations, annulations des états des lieux signés.
+db.version(4).stores({
+  journal: 'id, le, edlId, action',
+  annulations: 'edlId',
 })
 
 /** Demande à Android de ne jamais effacer automatiquement les données. */

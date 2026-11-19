@@ -15,7 +15,7 @@
 import { jsPDF } from 'jspdf'
 import { autoTable, type CellHookData, type RowInput } from 'jspdf-autotable'
 import { db } from '../db/base'
-import { normaliser } from '../db/edl'
+import { cleBal, normaliser } from '../db/edl'
 import { empreinteLisible } from '../db/cloture'
 import type { Edl, Element, Etat, Photo } from '../db/types'
 import { texteNombre } from '../modeles/comptes'
@@ -349,6 +349,23 @@ export async function genererRapport(source: Edl, avancement: Avancement = () =>
       ['Fonctionnement', d?.fonctionnement ? FONCTIONNEMENT[d.fonctionnement] : undefined],
       ['Commentaire', d?.commentaire],
       ['Photos', nums(d?.photoIds)],
+    ])
+  }
+
+  // Boîte aux lettres (absente des états des lieux signés avant la version 1.2.0 : rien n'est ajouté à ceux-ci).
+  if (edl.boiteAuxLettres) {
+    section('Boîte aux lettres')
+    const b = edl.boiteAuxLettres
+    const cleB = cleBal(edl)
+    fiche([
+      ['Présence', b.presence === undefined ? 'Non renseigné' : b.presence === 'oui' ? 'Présente' : 'Absente'],
+      ['Numéro / identification', b.numero],
+      ['Emplacement', b.emplacement],
+      ['État général', b.etat ? ETATS.find((x) => x.cle === b.etat)?.libelle : undefined],
+      ['Serrure', b.serrure === 'oui' ? 'Fonctionnelle' : b.serrure === 'non' ? 'Défaillante' : b.serrure === 'non_verifie' ? 'Non vérifiée' : undefined],
+      [edl.typeActe === 'sortie' ? 'Clés restituées' : 'Clés remises', b.presence === 'oui' ? String(cleB?.nombre ?? 0) : undefined],
+      ['Observations', b.observations],
+      ['Photos', nums(b.photoIds)],
     ])
   }
 

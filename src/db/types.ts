@@ -167,6 +167,8 @@ export interface Edl {
   compteurs?: ReleveCompteur[]
   cles?: Cle[]
   detecteur?: Detecteur
+  /** Boîte aux lettres (le nombre de clés est celui de la ligne « Boîte aux lettres » des clés). */
+  boiteAuxLettres?: BoiteAuxLettres
   /** Sortie : date de restitution des clés. */
   dateRestitutionCles?: string
 
@@ -177,6 +179,53 @@ export interface Edl {
   signataires?: Signataire[]
   /** Renseignée à la signature : plus aucune modification n'est possible ensuite. */
   cloture?: Cloture
+  /** Brouillon mis à la corbeille (restaurable). Jamais pour un état des lieux signé. */
+  corbeille?: { le: string; motif?: string }
+}
+
+/** Oui / non / non vérifié (absent = non renseigné). */
+export type OuiNonNv = 'oui' | 'non' | 'non_verifie'
+
+export interface BoiteAuxLettres {
+  /** Absent = non renseigné. */
+  presence?: 'oui' | 'non'
+  numero?: string
+  emplacement?: string
+  etat?: Etat
+  serrure?: OuiNonNv
+  observations?: string
+  photoIds: string[]
+}
+
+/**
+ * Annulation (archivage) d'un état des lieux signé.
+ * Rangée À PART : le document signé et son empreinte ne sont jamais modifiés.
+ */
+export interface Annulation {
+  edlId: string
+  le: string
+  motif: string
+}
+
+export type ActionJournal =
+  | 'corbeille'
+  | 'restauration'
+  | 'suppression_definitive'
+  | 'annulation'
+  | 'retablissement'
+  | 'code_defini'
+  | 'code_modifie'
+  | 'code_reinitialise'
+
+/** Trace des suppressions, annulations et changements de code (jamais effacée). */
+export interface EntreeJournal {
+  id: string
+  le: string
+  action: ActionJournal
+  edlId?: string
+  /** Ce qui a été touché, lisible (référence, bien, date, type, statut). */
+  description: string
+  motif?: string
 }
 
 /** Chiffrage d'une dégradation constatée à la sortie. */
@@ -343,6 +392,8 @@ export interface Bien {
   /** Compteurs à relever lors de chaque état des lieux. */
   compteurs: TypeCompteur[]
   infos?: string
+  /** Boîte aux lettres : repris dans chaque état des lieux. */
+  bal?: { numero?: string; emplacement?: string }
   creeLe: string
   modifieLe: string
 }

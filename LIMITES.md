@@ -32,6 +32,8 @@ Ce que l'application ne fait pas, ou fait avec des réserves. À connaître avan
 
 ## Non prévu à ce jour
 
-- Pas de code PIN dans l'application : le verrouillage de la tablette (code ou empreinte Android) protège l'accès.
+- Pas de code PIN pour ouvrir l'application : le verrouillage de la tablette (code ou empreinte Android) protège l'accès.
+- Le **code administrateur** (suppressions définitives, annulations) protège contre les fausses manœuvres ; ce n'est pas une gestion de comptes : toute personne qui le connaît peut agir, et « Code oublié » permet de le réinitialiser (avec trace au journal). Il est propre à chaque appareil.
+- Une sauvegarde restaurée peut faire revenir un brouillon supprimé définitivement après la date de cette sauvegarde (la restauration n'efface jamais rien).
 - Pas d'envoi automatique du PDF par e-mail : on passe par « Partager ».
 - Pas de modèles de pièces personnalisables dans les Paramètres (les pièces se modifient dans chaque état des lieux ou dans la fiche du bien).

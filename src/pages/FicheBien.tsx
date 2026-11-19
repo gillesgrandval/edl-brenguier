@@ -48,7 +48,7 @@ export default function FicheBien() {
     },
     [],
   )
-  const historique = useLiveQuery(async () => (id ? (await db.edls.where('bienId').equals(id).toArray()).sort((a, b) => b.dateVisite.localeCompare(a.dateVisite)) : []), [id])
+  const historique = useLiveQuery(async () => (id ? (await db.edls.where('bienId').equals(id).toArray()).filter((e) => !e.corbeille).sort((a, b) => b.dateVisite.localeCompare(a.dateVisite)) : []), [id])
 
   if (bien === undefined || historique === undefined) return <Chargement />
   if (bien === null) return <Chargement introuvable />
@@ -163,6 +163,8 @@ export default function FicheBien() {
           <Champ label="WC" valeur={b.wc?.toString()} onChange={nombre('wc')} type="number" />
           <Champ label="Annexes (séparées par des virgules)" valeur={b.annexes.join(', ')} onChange={(v) => maj((x) => void (x.annexes = enListe(v)))} large />
           <Champ label="Équipements connus (séparés par des virgules)" valeur={b.equipements.join(', ')} onChange={(v) => maj((x) => void (x.equipements = enListe(v)))} large />
+          <Champ label="Boîte aux lettres : numéro" valeur={b.bal?.numero} onChange={(v) => maj((x) => void (x.bal = { ...x.bal, numero: v || undefined }))} />
+          <Champ label="Boîte aux lettres : emplacement" valeur={b.bal?.emplacement} onChange={(v) => maj((x) => void (x.bal = { ...x.bal, emplacement: v || undefined }))} placeholder="ex. hall d'entrée" />
         </div>
         <div className="carte rubrique-carte" style={{ marginTop: 12 }}>
           <Interrupteur libelle="Location meublée" valeur={!!b.meuble} onChange={(v) => maj((x) => void (x.meuble = v))} />

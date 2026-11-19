@@ -10,7 +10,7 @@ import {
   ClipboardList,
   Fingerprint,
   Gauge,
-  KeyRound,
+  KeyRound, Mailbox,
   Loader2,
   Lock,
   PenLine,
@@ -127,6 +127,17 @@ function Recapitulatif({ edl }: { edl: Edl }) {
             <div className="recap-detail">
               <button className={`recap-puce ${r.detecteur ? 'recap-ok' : 'recap-attente'}`} onClick={() => navigate(`/edl/${edl.id}/detecteur`)}>
                 {edl.detecteur?.present === false ? 'Absent' : edl.detecteur?.fonctionnement === 'ok' ? 'Présent, fonctionne' : edl.detecteur?.fonctionnement ? 'Présent, à vérifier' : 'Non renseigné'}
+              </button>
+            </div>
+          </div>
+        )}
+        {r.boiteAuxLettres !== null && (
+          <div className="recap-ligne">
+            <Mailbox size={20} />
+            <strong>Boîte aux lettres</strong>
+            <div className="recap-detail">
+              <button className={`recap-puce ${r.boiteAuxLettres ? 'recap-ok' : 'recap-attente'}`} onClick={() => navigate(`/edl/${edl.id}/boite-aux-lettres`)}>
+                {edl.boiteAuxLettres?.presence === 'non' ? 'Absente' : edl.boiteAuxLettres?.presence === 'oui' ? (r.boiteAuxLettres ? 'Présente, renseignée' : 'Présente, état ou serrure à renseigner') : 'Non renseignée'}
               </button>
             </div>
           </div>

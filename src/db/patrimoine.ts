@@ -83,6 +83,8 @@ export async function creerEdlDepuisBien(bien: Bien, dateVisite: string): Promis
     eauChaude: { mode: 'individuel', idemChauffage: true },
     pieces: creerPiecesDepuisBien(bien.pieces),
     compteurs,
+    // Boîte aux lettres : numéro et emplacement connus, état à constater.
+    boiteAuxLettres: { numero: bien.bal?.numero, emplacement: bien.bal?.emplacement, photoIds: [] },
   }
   await db.edls.add(normaliser(edl))
   return edl.id

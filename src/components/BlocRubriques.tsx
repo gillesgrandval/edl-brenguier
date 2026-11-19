@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlarmSmoke, Check, Gauge, KeyRound, MessageSquareText, Plus, Sofa } from 'lucide-react'
+import { AlarmSmoke, Check, Gauge, KeyRound, Mailbox, MessageSquareText, Plus, Sofa } from 'lucide-react'
 import { etatRubriques, majEdl, progressionPiece } from '../db/edl'
 import type { Edl } from '../db/types'
 import { creerInventaire } from '../modeles/pieces'
@@ -44,6 +44,15 @@ export default function BlocRubriques({ edl }: { edl: Edl }) {
             ok={r.detecteur}
             detail={edl.detecteur?.present === undefined ? 'À renseigner' : edl.detecteur.present ? 'Présent' : 'Absent'}
             onClick={() => aller('detecteur')}
+          />
+        )}
+        {r.boiteAuxLettres !== null && (
+          <Tuile
+            icone={<Mailbox />}
+            nom="Boîte aux lettres"
+            ok={r.boiteAuxLettres}
+            detail={edl.boiteAuxLettres?.presence === undefined ? 'À renseigner' : edl.boiteAuxLettres.presence === 'non' ? 'Absente' : ['Présente', edl.boiteAuxLettres.numero && `n° ${edl.boiteAuxLettres.numero}`].filter(Boolean).join(' · ')}
+            onClick={() => aller('boite-aux-lettres')}
           />
         )}
         {edl.typeBien !== 'local' &&

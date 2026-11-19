@@ -9,6 +9,7 @@ import type { CategorieVetuste } from '../modeles/vetuste'
 import { formatDate } from '../libelles'
 import { Champ, Confirmation, Interrupteur, Section } from '../components/ui'
 import Chargement from '../components/Chargement'
+import SectionSecurite from '../components/Securite'
 
 type Fichier = { blob: Blob; nom: string; detail?: string }
 
@@ -265,6 +266,8 @@ export default function Parametres() {
           </button>
         </div>
       </Section>
+
+      <SectionSecurite />
 
       <Section titre="Mentions du rapport PDF">
         <div className="carte rubrique-carte">

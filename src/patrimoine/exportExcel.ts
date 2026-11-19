@@ -21,7 +21,9 @@ async function ecrire(lignes: Cellule[][], largeurs: number[]): Promise<Blob> {
 }
 
 export async function exporterEtatsDesLieux(): Promise<Blob> {
-  const edls = (await db.edls.toArray()).sort((a, b) => b.dateVisite.localeCompare(a.dateVisite))
+  // Les brouillons de la corbeille ne sont pas exportés.
+  const annulations = new Map((await db.annulations.toArray()).map((a) => [a.edlId, a]))
+  const edls = (await db.edls.toArray()).filter((e) => !e.corbeille).sort((a, b) => b.dateVisite.localeCompare(a.dateVisite))
   const photos = new Map<string, number>()
   await db.photos.each((p) => photos.set(p.edlId, (photos.get(p.edlId) ?? 0) + 1))
   const entetes = ['Référence', 'Type', 'Statut', 'Date de visite', 'Adresse', 'Code postal', 'Ville', 'Lot', 'Bien', 'Bailleur', 'Locataires', 'Pièces', 'Photos', 'Signé le', 'Empreinte SHA-256']
@@ -30,7 +32,7 @@ export async function exporterEtatsDesLieux(): Promise<Blob> {
     ...edls.map((e) => [
       cel(e.reference),
       cel(LIBELLE_ACTE[e.typeActe]),
-      cel(LIBELLE_STATUT[e.statut]),
+      cel(annulations.has(e.id) ? `${LIBELLE_STATUT[e.statut]} — annulé (${annulations.get(e.id)!.motif})` : LIBELLE_STATUT[e.statut]),
       cel(formatDate(e.dateVisite, e.dateVisite.length > 10)),
       cel(e.bien.adresse),
       cel(e.bien.codePostal),

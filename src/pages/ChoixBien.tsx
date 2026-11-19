@@ -45,7 +45,7 @@ export default function ChoixBien() {
   }, [tous, recherche])
 
   // Historique des états des lieux du bien choisi.
-  const historique = useLiveQuery(async () => (bienId ? (await db.edls.where('bienId').equals(bienId).toArray()).sort((a, b) => b.dateVisite.localeCompare(a.dateVisite)) : []), [bienId])
+  const historique = useLiveQuery(async () => (bienId ? (await db.edls.where('bienId').equals(bienId).toArray()).filter((e) => !e.corbeille).sort((a, b) => b.dateVisite.localeCompare(a.dateVisite)) : []), [bienId])
 
   if (biens === undefined) return <Chargement />
 

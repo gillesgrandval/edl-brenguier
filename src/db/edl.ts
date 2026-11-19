@@ -53,7 +53,11 @@ export async function enregistrerEdl(edl: Edl): Promise<void> {
     // Filet de sécurité : un état des lieux signé n'est jamais réécrit (sauvegarde différée, autre écran…).
     const actuel = await db.edls.get(edl.id)
     if (actuel?.statut === 'signe') return
-    await db.edls.put({ ...edl, modifieLe: new Date().toISOString() })
+    // La mise à la corbeille se fait hors des écrans de saisie : une saisie en cours ne l'annule pas.
+    const contenu: Edl = { ...edl, modifieLe: new Date().toISOString() }
+    if (actuel?.corbeille) contenu.corbeille = actuel.corbeille
+    else delete contenu.corbeille
+    await db.edls.put(contenu)
   })
 }
 
@@ -98,8 +102,8 @@ export function progressionGlobale(edl: Edl): number {
     total += pr.total
   }
   const r = etatRubriques(normaliser(edl))
-  faits += r.compteurs.faits + (r.cles ? 1 : 0) + (r.detecteur === true ? 1 : 0)
-  total += r.compteurs.total + 1 + (r.detecteur === null ? 0 : 1)
+  faits += r.compteurs.faits + (r.cles ? 1 : 0) + (r.detecteur === true ? 1 : 0) + (r.boiteAuxLettres === true ? 1 : 0)
+  total += r.compteurs.total + 1 + (r.detecteur === null ? 0 : 1) + (r.boiteAuxLettres === null ? 0 : 1)
   return total ? Math.round((faits / total) * 100) : 0
 }
 
@@ -117,7 +121,19 @@ export function etatRubriques(edl: Edl) {
     cles: (edl.cles ?? []).some((c) => c.nombre > 0),
     /** null = sans objet (local d'activité). */
     detecteur: edl.typeBien === 'local' ? null : edl.detecteur?.present === false || !!edl.detecteur?.fonctionnement,
+    /** null = rubrique absente (états des lieux signés avant son apparition). */
+    boiteAuxLettres: edl.boiteAuxLettres ? balFaite(edl.boiteAuxLettres) : null,
   }
+}
+
+/** Boîte aux lettres renseignée : absente, ou présente avec son état et sa serrure. */
+export function balFaite(b: NonNullable<Edl['boiteAuxLettres']>): boolean {
+  return b.presence === 'non' || (b.presence === 'oui' && !!b.etat && !!b.serrure)
+}
+
+/** Ligne des clés correspondant à la boîte aux lettres (le nombre de clés remises y est compté). */
+export function cleBal(edl: Pick<Edl, 'cles'>): Cle | undefined {
+  return edl.cles?.find((c) => /^bo[iî]te aux lettres/i.test(c.libelle.trim()))
 }
 
 function comp(type: ReleveCompteur['type'], libelle: string): ReleveCompteur {
@@ -132,6 +148,8 @@ function cle(libelle: string): Cle {
  * (états des lieux créés avec une version antérieure de l'application).
  */
 export function normaliser(edl: Edl): Edl {
+  // Boîte aux lettres : ajoutée aux états des lieux non signés (un document signé n'est jamais complété).
+  if (!edl.boiteAuxLettres && edl.statut !== 'signe') edl = { ...edl, boiteAuxLettres: { photoIds: [] } }
   if (edl.compteurs && edl.cles && edl.detecteur) return edl
   return {
     ...edl,

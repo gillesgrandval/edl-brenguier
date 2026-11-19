@@ -1,12 +1,13 @@
 import { useState, type ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { AlarmSmoke, ArrowLeft, Camera, Check, CircleAlert, Gauge, KeyRound, MessageSquareText, Plus, ScanLine, Trash2, Wrench } from 'lucide-react'
+import { AlarmSmoke, ArrowLeft, Camera, Check, CircleAlert, Gauge, KeyRound, Mailbox, MessageSquareText, Plus, ScanLine, Trash2, Wrench } from 'lucide-react'
 import { useEdl } from '../hooks/useEdl'
 import { db, nouvelId } from '../db/base'
-import { compteurFait, maintenantLocal } from '../db/edl'
+import { balFaite, cleBal, compteurFait, maintenantLocal } from '../db/edl'
+import { ETATS } from '../libelles'
 import { consommation } from '../db/sortie'
 import { useLiveQuery } from 'dexie-react-hooks'
-import type { Edl, Fonctionnement, ReleveCompteur, TypeCompteur } from '../db/types'
+import type { Edl, Fonctionnement, OuiNonNv, ReleveCompteur, TypeCompteur } from '../db/types'
 import { enregistrerPhoto, supprimerPhotos } from '../photos/traitement'
 import { Champ, Compteur, Interrupteur, Tuiles, Verrou } from '../components/ui'
 import { BoutonsPhoto, GaleriePhotos } from '../components/Photos'
@@ -425,6 +426,126 @@ export function Detecteur() {
         </div>
         <Commentaire label="Commentaire" valeur={d.commentaire} placeholder="Emplacement, date de la pile…" onChange={(v) => maj((x) => void (x.commentaire = v || undefined))} />
       </section>
+      </Verrou>
+    </div>
+  )
+}
+
+// =====================================================================
+// Boîte aux lettres
+// =====================================================================
+
+const SERRURE: [OuiNonNv, string][] = [
+  ['oui', 'Fonctionnelle'],
+  ['non', 'Défaillante'],
+  ['non_verifie', 'Non vérifiée'],
+]
+
+export function BoiteAuxLettres() {
+  const r = useRubrique()
+  if (r.edl === undefined) return <Chargement />
+  if (!r.edl) return <Chargement introuvable />
+  const edl = r.edl
+  const b = edl.boiteAuxLettres ?? { photoIds: [] }
+  const maj = (f: (x: NonNullable<Edl['boiteAuxLettres']>) => void) =>
+    r.modifier((e) => {
+      e.boiteAuxLettres ??= { photoIds: [] }
+      f(e.boiteAuxLettres)
+    })
+  const cle = cleBal(edl)
+  const fixerCles = (n: number) =>
+    r.modifier((e) => {
+      const c = cleBal(e)
+      if (c) c.nombre = n
+      else (e.cles ??= []).push({ id: nouvelId(), libelle: 'Boîte aux lettres', nombre: n, photoIds: [] })
+    })
+  const avant = r.entree?.boiteAuxLettres
+  const clesEntree = r.entree ? cleBal(r.entree)?.nombre : undefined
+  const fait = balFaite(b)
+
+  return (
+    <div className="saisie-piece">
+      <Entete titre="Boîte aux lettres" icone={<Mailbox size={24} />} edl={edl} sauvegarde={r.sauvegarde}>
+        <Statut ok={fait} texteOk="Renseignée" texteAttente="À renseigner" />
+      </Entete>
+      <Verrou actif={edl.statut === 'signe'} signeLe={edl.cloture?.signeLe}>
+        {avant && (
+          <div className="rappel-entree">
+            <strong>À l'entrée :</strong> {avant.presence === undefined ? 'non renseignée' : avant.presence === 'non' ? 'absente' : [ETATS.find((x) => x.cle === avant.etat)?.libelle ?? 'état non renseigné', avant.serrure && `serrure ${SERRURE.find(([v]) => v === avant.serrure)?.[1].toLowerCase()}`, avant.observations].filter(Boolean).join(' · ')}
+            {clesEntree !== undefined && ` · ${clesEntree} clé(s) remise(s)`}
+          </div>
+        )}
+        <section className="carte rubrique-carte">
+          <div className="bloc-titre">Présence</div>
+          <Tuiles<'oui' | 'non'>
+            colonnes={2}
+            valeur={b.presence}
+            onChange={(v) => maj((x) => void (x.presence = x.presence === v ? undefined : v))}
+            options={[
+              { valeur: 'oui', libelle: 'Présente', icone: <Check size={26} /> },
+              { valeur: 'non', libelle: 'Absente', icone: <CircleAlert size={26} /> },
+            ]}
+          />
+          {b.presence === undefined && <p className="texte-doux">Non renseignée.</p>}
+          {b.presence === 'oui' && (
+            <>
+              <div className="grille" style={{ marginTop: 16 }}>
+                <Champ label="Numéro ou identification" valeur={b.numero} onChange={(v) => maj((x) => void (x.numero = v || undefined))} placeholder="ex. 12, nom sur l'étiquette…" />
+                <Champ label="Emplacement" valeur={b.emplacement} onChange={(v) => maj((x) => void (x.emplacement = v || undefined))} placeholder="ex. hall d'entrée, bâtiment B, portail…" />
+              </div>
+              <div className="bloc">
+                <div className="bloc-titre">État général</div>
+                <div className="boutons-etat">
+                  {ETATS.map((e) => (
+                    <button
+                      key={e.cle}
+                      type="button"
+                      className={`bouton-etat ${b.etat === e.cle ? 'bouton-etat-actif' : ''}`}
+                      style={{ '--couleur': e.couleur } as React.CSSProperties}
+                      onClick={() => maj((x) => void (x.etat = x.etat === e.cle ? undefined : e.cle))}
+                    >
+                      <span className="bouton-etat-code">{e.code}</span>
+                      <span className="bouton-etat-libelle">{e.libelle}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="bloc">
+                <div className="bloc-titre">
+                  <Wrench size={16} /> Serrure
+                </div>
+                <div className="segment segment-large">
+                  {SERRURE.map(([v, l]) => (
+                    <button key={v} className={b.serrure === v ? `segment-actif fonct-${v === 'oui' ? 'ok' : v === 'non' ? 'defaillant' : 'non_teste'}` : ''} onClick={() => maj((x) => void (x.serrure = x.serrure === v ? undefined : v))}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="bloc ligne-compteur">
+                <span>
+                  <KeyRound size={16} /> Nombre de clés {edl.typeActe === 'sortie' ? 'restituées' : 'remises'}
+                </span>
+                <Compteur valeur={cle?.nombre ?? 0} max={20} onChange={fixerCles} libelle="Clés de boîte aux lettres" />
+              </div>
+              <p className="texte-doux">Ce nombre figure aussi dans la rubrique « Clés et badges ».</p>
+            </>
+          )}
+          <div className="bloc">
+            <div className="bloc-titre">
+              <Camera size={16} /> Photos
+            </div>
+            <BoutonsPhoto enCours={r.traitement} onFichiers={(f) => r.photos(f, 'Boîte aux lettres', 'Boîte aux lettres', (pid) => maj((x) => void x.photoIds.push(pid)))} />
+            <GaleriePhotos
+              ids={b.photoIds}
+              onSupprimer={async (pid) => {
+                await supprimerPhotos([pid])
+                maj((x) => void (x.photoIds = x.photoIds.filter((y) => y !== pid)))
+              }}
+            />
+          </div>
+          <Commentaire label="Observations" valeur={b.observations} placeholder="Étiquette, porte, dépôt de courrier…" onChange={(v) => maj((x) => void (x.observations = v || undefined))} />
+        </section>
       </Verrou>
     </div>
   )

@@ -76,10 +76,11 @@ Pour chaque compteur : numéro (PDL pour l'électricité, PCE pour le gaz), **in
 
 Un relevé manquant est signalé « À effectuer » sur l'accueil, sur le tableau de bord et au moment de signer.
 
-## Clés, détecteur, observations
+## Clés, détecteur, boîte aux lettres, observations
 
 - **Clés** : nombre de chaque clé, badge, télécommande remis (ou restitués à la sortie).
 - **Détecteur de fumée** : présent, fonctionnement testé.
+- **Boîte aux lettres** : présente ou absente, numéro, emplacement, état, serrure (fonctionnelle, défaillante, non vérifiée), nombre de clés remises (ou restituées), observations, photos. Le nombre de clés est le même que la ligne « Boîte aux lettres » de la rubrique Clés. Le numéro et l'emplacement peuvent être notés dans la fiche du bien.
 - **Observations générales** et **remarques du locataire**.
 
 ## Signer
@@ -106,6 +107,17 @@ Avant signature, le PDF est un **projet** (mention « PROJET » sur chaque page)
 
 **Bonne pratique** : envoyez le PDF signé au locataire par e-mail juste après la signature.
 
+## Supprimer ou annuler un état des lieux
+
+Bouton **corbeille** à droite de chaque état des lieux dans la liste, ou en bas de son tableau de bord. Une fenêtre récapitule le bien, la date, le type et le statut avant toute action.
+
+- **Non signé** (brouillon, test, doublon) : il va dans la **corbeille** (lien en bas de la liste, ou Paramètres → Corbeille). On peut l'y **restaurer**. La **suppression définitive** (photos comprises) se fait depuis la corbeille, avec le **code administrateur**.
+- **Signé** : il ne peut **jamais être supprimé**. Il peut être **annulé (archivé)**, avec un motif et le code administrateur. Il reste consultable, son PDF et son empreinte sont intacts, il est signalé « Annulé » (filtre « Annulés » de la liste). L'annulation peut être levée avec le code.
+- La fiche du bien et les autres états des lieux ne sont jamais touchés.
+- Toutes ces actions sont inscrites au **journal** (Paramètres → Sécurité et suppressions), qui ne s'efface pas.
+
+**Code administrateur** (4 à 8 chiffres) : défini une fois par appareil, dans Paramètres ou à la première suppression définitive. Il n'est pas récupérable. En cas d'oubli, « Code oublié » l'efface (avec une raison, inscrite au journal) pour en définir un nouveau.
+
 ## État des lieux de sortie
 
 1. Ouvrez l'**état des lieux d'entrée signé** → **« Préparer l'état des lieux de sortie »**.
@@ -127,6 +139,7 @@ La vétusté suit la grille des Paramètres. Les montants sont des estimations, 
 - **Sauvegarde complète** (.zip) et **restauration** (n'efface jamais rien).
 - **Exports Excel** : liste des états des lieux, patrimoine (réimportable).
 - **Opérateur par défaut**, **entités du groupe** (bailleurs), **grille de vétusté**, **mentions** ajoutées au rapport PDF.
+- **Sécurité et suppressions** : code administrateur, corbeille, journal.
 
 ## Conseils de terrain
 

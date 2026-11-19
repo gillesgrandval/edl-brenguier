@@ -850,3 +850,17 @@ input[type="search"]::-webkit-search-cancel-button { display: none; }
 .ligne-case input { width: 24px; height: 24px; accent-color: var(--principal); flex-shrink: 0; }
 .grille-nombres { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 12px; }
 @media (max-width: 640px) { .grille-nombres { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* --- Suppression contrôlée, corbeille, annulation --- */
+.resume-edl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 0 0 14px; padding: 12px 14px; background: var(--fond-doux); border: 1px solid var(--trait); border-radius: 10px; font-size: 15px; }
+.resume-edl dt { font-weight: 700; color: var(--texte-doux); }
+.resume-edl dd { margin: 0; }
+.saisie-code { letter-spacing: .4em; font-size: 22px; max-width: 220px; }
+.bandeau-annule { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: var(--erreur-fond); border: 1px solid var(--erreur-bord); color: var(--erreur-texte); border-radius: 12px; padding: 10px 14px; margin-bottom: 12px; }
+.ligne-edl { display: flex; align-items: stretch; gap: 8px; }
+.ligne-edl > .carte-edl { flex: 1; min-width: 0; }
+.bouton-action-edl { flex: none; width: 52px; border: 1px solid var(--trait); border-radius: var(--rayon); background: var(--surface); color: var(--texte-doux); display: grid; place-items: center; }
+.bouton-action-edl:hover { color: var(--erreur-texte); border-color: var(--erreur-bord); }
+.carte-edl-annule { opacity: .7; }
+.journal-ligne { padding: 10px 0; border-bottom: 1px solid var(--trait); font-size: 15px; }
+.journal-ligne:last-child { border-bottom: 0; }
