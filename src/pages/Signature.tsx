@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   Camera,
   Check,
+  ChevronRight,
   CircleAlert,
   ClipboardList,
   Fingerprint,
@@ -28,6 +29,7 @@ import { Champ, Confirmation, Interrupteur, Section } from '../components/ui'
 import { BoutonDictee } from '../components/Dictee'
 import PaveSignature from '../components/PaveSignature'
 import BoutonsRapport from '../components/BoutonsRapport'
+import ControleConfidentialite from '../components/ControleConfidentialite'
 import Chargement from '../components/Chargement'
 
 /**
@@ -199,6 +201,7 @@ function PointsEnAttente({ edl }: { edl: Edl }) {
 // ---------------------------------------------------------------------
 
 function AvantSignature({ id }: { id: string }) {
+  const navigate = useNavigate()
   const { edl, modifier, enregistrerMaintenant } = useEdl(id)
   const [saisies, setSaisies] = useState<Record<string, SignatureSaisie>>({})
   const [certifie, setCertifie] = useState(false)
@@ -206,10 +209,15 @@ function AvantSignature({ id }: { id: string }) {
   const [rappelCompteurs, setRappelCompteurs] = useState(false)
   const [enCours, setEnCours] = useState(false)
   const [erreur, setErreur] = useState<string>()
+  const [controleOk, setControleOk] = useState(false)
+  // Visite commune : document jumeau, pour le contrôle anti-fuite des deux PDF.
+  const idJumeau = edl?.issuDeVisite?.autreId
+  const jumeau = useLiveQuery(async () => (idJumeau ? ((await db.edls.get(idJumeau)) ?? null) : null), [idJumeau])
 
   if (edl === undefined) return <Chargement />
   if (edl === null) return <Chargement introuvable />
 
+  const avecJumeau = !!jumeau && !jumeau.corbeille
   const attendus = signatairesAttendus(edl)
   const saisie = (s: Signataire): SignatureSaisie => saisies[s.id] ?? { signataire: s }
   const maj = (s: Signataire, m: Partial<SignatureSaisie>) => setSaisies((x) => ({ ...x, [s.id]: { ...saisie(s), ...m } }))
@@ -220,7 +228,7 @@ function AvantSignature({ id }: { id: string }) {
   const manquantes = attendus.filter((s) => !complet(s))
   const acteADefinir = edl.typeActe === 'a_definir'
   const compteursAFaire = (edl.compteurs ?? []).filter((c) => !compteurFait(c))
-  const pret = manquantes.length === 0 && certifie && attendus.some((s) => s.role === 'locataire') && !acteADefinir
+  const pret = manquantes.length === 0 && certifie && attendus.some((s) => s.role === 'locataire') && !acteADefinir && (!avecJumeau || controleOk)
   const preneur = edl.typeBien === 'local' ? 'preneur' : 'locataire'
 
   async function signer() {
@@ -259,6 +267,21 @@ function AvantSignature({ id }: { id: string }) {
           />
         </div>
       </Section>
+
+      {avecJumeau && (
+        <Section titre="Confidentialité">
+          {jumeau.statut !== 'signe' && (
+            <button className="carte tuile-ligne" style={{ marginBottom: 12 }} onClick={() => navigate(`/edl/${edl.id}/signer-visite`)}>
+              <span className="tuile-ligne-texte">
+                <strong>Signer la sortie et l'entrée ensemble</strong>
+                <span className="texte-doux">Les trois signataires sur un même écran</span>
+              </span>
+              <ChevronRight />
+            </button>
+          )}
+          <ControleConfidentialite a={edl} b={normaliser(jumeau)} onPret={setControleOk} />
+        </Section>
+      )}
 
       <Section titre="Signatures">
         <div className="carte rubrique-carte">
@@ -319,7 +342,7 @@ function AvantSignature({ id }: { id: string }) {
         </button>
         {!pret && !enCours && (
           <p className="texte-doux" style={{ textAlign: 'center' }}>
-            {acteADefinir ? 'Choisissez d’abord le type d’état des lieux (entrée, sortie…) dans les informations générales.' : manquantes.length ? `Signature${manquantes.length > 1 ? 's' : ''} attendue${manquantes.length > 1 ? 's' : ''} : ${manquantes.map((m) => m.nom).join(', ')}.` : 'Cochez la déclaration ci-dessus.'}
+            {avecJumeau && !controleOk ? 'Attendez la fin du contrôle anti-fuite (ou corrigez ce qu’il signale).' : acteADefinir ? 'Choisissez d’abord le type d’état des lieux (entrée, sortie…) dans les informations générales.' : manquantes.length ? `Signature${manquantes.length > 1 ? 's' : ''} attendue${manquantes.length > 1 ? 's' : ''} : ${manquantes.map((m) => m.nom).join(', ')}.` : 'Cochez la déclaration ci-dessus.'}
           </p>
         )}
       </Section>

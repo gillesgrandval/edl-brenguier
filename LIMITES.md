@@ -16,6 +16,7 @@ Ce que l'application ne fait pas, ou fait avec des réserves. À connaître avan
 ## Visite commune (sortie + entrée)
 
 - Le contrôle de confidentialité recherche les noms, prénoms, téléphones, e-mails et la nouvelle adresse saisis pour chaque locataire. Il ne peut pas reconnaître une information écrite autrement (par exemple un surnom ou un numéro mal recopié) : relisez les commentaires communs.
+- Le contrôle anti-fuite des PDF lit le texte écrit dans le PDF et ses métadonnées. Il ne lit pas le contenu des **photos** (un nom sur une boîte aux lettres photographiée, par exemple) : vérifiez-les.
 - Une photo prise pendant la visite figure dans les deux documents. Retirez-la de l'un d'eux avant sa signature si elle ne concerne qu'un locataire.
 - Sans entrée précédente dans l'application, la sortie n'a pas de comparatif automatique. Le comparatif à partir d'un ancien PDF est prévu plus tard.
 

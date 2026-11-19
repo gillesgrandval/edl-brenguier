@@ -46,6 +46,9 @@ export default function TableauDeBord() {
   }, [id])
   const [confirmer, setConfirmer] = useState(false)
   const annulation = useLiveQuery(async () => (id ? ((await db.annulations.get(id)) ?? null) : null), [id])
+  // Visite commune : document jumeau (pour proposer la signature groupée).
+  const idJumeau = edl?.issuDeVisite?.autreId
+  const jumeau = useLiveQuery(async () => (idJumeau ? ((await db.edls.get(idJumeau)) ?? null) : null), [idJumeau])
 
   if (edl === undefined) return <Chargement />
   if (edl === null) return <Chargement introuvable />
@@ -259,6 +262,18 @@ export default function TableauDeBord() {
         </Section>
       ) : (
       <Section titre="Clôture">
+        {edl.statut !== 'signe' && jumeau && jumeau.statut !== 'signe' && !jumeau.corbeille && !edl.corbeille && (
+          <button className="carte tuile-ligne" style={{ marginBottom: 12 }} onClick={() => navigate(`/edl/${edl.id}/signer-visite`)}>
+            <span className="tuile-ligne-icone">
+              <ArrowRightLeft size={22} />
+            </span>
+            <span className="tuile-ligne-texte">
+              <strong>Signer la sortie et l'entrée ensemble</strong>
+              <span className="texte-doux">Sortant, entrant et représentant sur un même écran ; contrôle anti-fuite des deux PDF ; chaque document scellé séparément</span>
+            </span>
+            <ChevronRight />
+          </button>
+        )}
         <button className={`carte tuile-ligne ${edl.statut === 'signe' ? 'tuile-ligne-ok' : ''}`} onClick={() => navigate(`/edl/${edl.id}/signature`)}>
           <span className="tuile-ligne-icone">{edl.statut === 'signe' ? <Lock size={22} /> : <PenLine size={22} />}</span>
           <span className="tuile-ligne-texte">

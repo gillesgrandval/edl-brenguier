@@ -273,6 +273,11 @@ export interface Signataire {
   qualite?: string
   /** Image de la signature (table « signatures »). */
   signatureId?: string
+  /**
+   * Signature reprise, avec la validation explicite du signataire, de l'état des lieux lié
+   * (visite commune) : référence de ce document. Mentionné au rapport.
+   */
+  repriseDe?: string
   /** Absent ou refus de signer : la mention figure au rapport. */
   absent?: boolean
   motifAbsence?: string

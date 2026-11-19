@@ -140,7 +140,14 @@ Quand le locataire sortant et le nouveau locataire sont présents ensemble, une 
 6. **« Terminer la visite »** : l'écran montre les deux documents qui seront créés et fait un **contrôle de confidentialité**.
    - Si le téléphone ou l'e-mail d'un locataire figure dans un texte repris dans le document de l'autre, il faut le retirer.
    - Si un nom apparaît (cela peut être un mot courant, comme « Port »), cochez « J'ai vérifié » après contrôle.
-7. Deux états des lieux sont créés : **A – Sortie** (locataire sortant, comparatif avec l'entrée) et **B – Entrée** (locataire entrant, sans aucune donnée du sortant). Chacun a sa copie des photos. **Faites signer chacun séparément** : le représentant signe les deux.
+7. Deux états des lieux sont créés : **A – Sortie** (locataire sortant, comparatif avec l'entrée) et **B – Entrée** (locataire entrant, sans aucune donnée du sortant). Chacun a sa copie des photos.
+8. **« Signer la sortie et l'entrée ensemble »** (tableau de bord de l'un des deux documents) : un seul écran pour les trois signataires.
+   - Le **locataire sortant** signe la sortie, le **locataire entrant** signe l'entrée.
+   - Le **représentant** signe la sortie, puis signe à nouveau l'entrée. S'il le demande, il peut **reprendre sa signature** de la sortie pour l'entrée : c'est un choix explicite (désactivé par défaut), mentionné sur le PDF d'entrée.
+   - Avant de signer, l'application **fabrique les deux PDF et les fouille** : texte de chaque page et métadonnées du fichier. Si un nom, un téléphone, un e-mail ou la nouvelle adresse d'un locataire figure dans le PDF de l'autre, elle indique le document et la page. Le contrôle est refait sur les PDF signés.
+   - Chaque document est scellé séparément, avec sa propre empreinte.
+
+   Vous pouvez aussi signer chaque document seul, depuis son écran « Récapitulatif et signatures » : le contrôle anti-fuite des deux PDF y est fait aussi.
 
 La fiche de visite disparaît et l'opération est inscrite au journal. Jusqu'à leur signature, les deux documents restent modifiables, mais une correction faite dans l'un ne se reporte pas dans l'autre.
 

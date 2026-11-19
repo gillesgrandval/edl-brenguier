@@ -224,7 +224,12 @@ export interface Fuite {
 
 /** Recherche dans un document les données d'autres personnes. Renvoie les fuites trouvées (vide = conforme). */
 export function rechercherDonnees(doc: Edl, personnes: Personne[], autres: [string, string][] = []): Fuite[] {
-  const corpus = textes(doc).map((x) => ({ ...x, normal: sansAccents(x.texte), chiffres: chiffres(x.texte) }))
+  return rechercherDansTextes(textes(doc), personnes, autres)
+}
+
+/** Recherche les données de ces personnes dans une liste de textes (champ saisi, ligne d'un PDF…). */
+export function rechercherDansTextes(source: { texte: string; ou: string }[], personnes: Personne[], autres: [string, string][] = []): Fuite[] {
+  const corpus = source.map((x) => ({ ...x, normal: sansAccents(x.texte), chiffres: chiffres(x.texte) }))
   const fuites: Fuite[] = []
   const lieux = (test: (x: (typeof corpus)[number]) => boolean) => [...new Set(corpus.filter(test).map((x) => x.ou))].join(', ')
   for (const p of personnes) {
@@ -237,7 +242,7 @@ export function rechercherDonnees(doc: Edl, personnes: Personne[], autres: [stri
     }
   }
   for (const [libelle, valeur] of autres) {
-    const ou = valeur.trim().length >= 4 ? lieux((x) => x.normal.includes(sansAccents(valeur.trim()))) : ''
+    const ou = valeur.trim().length >= 4 ? lieux((x) => x.normal.replace(/\s+/g, ' ').includes(sansAccents(valeur.trim()).replace(/\s+/g, ' '))) : ''
     if (ou) fuites.push({ texte: libelle, certaine: true, ou })
   }
   return fuites

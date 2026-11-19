@@ -74,6 +74,8 @@ export interface SignatureSaisie {
   image?: Blob
   absent?: boolean
   motif?: string
+  /** Signature reprise d'un autre document, sur validation explicite : sa référence. */
+  reprise?: string
 }
 
 /** Enregistre les signatures, fige l'état des lieux et calcule son empreinte. */
@@ -89,6 +91,7 @@ export async function signerEdl(edl: Edl, saisies: SignatureSaisie[], lieu: stri
     } else if (s.image) {
       sig.signatureId = nouvelId()
       await db.signatures.add({ id: sig.signatureId, edlId: edl.id, image: s.image, traceeLe: maintenant })
+      if (s.reprise) sig.repriseDe = s.reprise
     }
     signataires.push(sig)
   }

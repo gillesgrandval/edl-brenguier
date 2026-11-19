@@ -143,6 +143,43 @@ export interface Avancement {
 }
 
 export async function genererRapport(source: Edl, avancement: Avancement = () => {}): Promise<Blob> {
+  return (await fabriquerRapport(source, avancement)).blob
+}
+
+/** Ce qu'un PDF contient réellement : chaque texte écrit (avec sa page) et ses métadonnées. */
+export interface ContenuPdf {
+  blob: Blob
+  textes: { texte: string; page: number }[]
+  /** Valeurs du dictionnaire d'informations du fichier (titre, auteur, créateur…), lues dans le PDF produit. */
+  metadonnees: string[]
+}
+
+/** Lit les métadonnées (dictionnaire /Info) dans le PDF produit. */
+export function lireMetadonnees(brut: string): string[] {
+  const r: string[] = []
+  for (const m of brut.matchAll(/\/(Title|Author|Subject|Keywords|Creator|Producer)\s*\(((?:\\.|[^\\)])*)\)/g)) r.push(m[2].replace(/\\(.)/g, '$1'))
+  return r
+}
+
+/**
+ * Fabrique le PDF et relève tout ce qui y est écrit (pour le contrôle anti-fuite).
+ * Chaque appel à l'écriture de texte du document est enregistré, tableaux compris.
+ */
+export async function fabriquerRapport(source: Edl, avancement: Avancement = () => {}): Promise<ContenuPdf> {
+  const textes: ContenuPdf['textes'] = []
+  const blob = await dessinerRapport(source, avancement, (doc) => {
+    const ecrire = doc.text.bind(doc)
+    doc.text = ((texte: string | string[], ...reste: unknown[]) => {
+      const page = doc.getCurrentPageInfo().pageNumber
+      for (const l of Array.isArray(texte) ? texte : [texte]) if (typeof l === 'string' && l.trim()) textes.push({ texte: l, page })
+      return (ecrire as (...a: unknown[]) => jsPDF)(texte, ...reste)
+    }) as typeof doc.text
+  })
+  const brut = new TextDecoder('latin1').decode(await blob.arrayBuffer())
+  return { blob, textes, metadonnees: lireMetadonnees(brut) }
+}
+
+async function dessinerRapport(source: Edl, avancement: Avancement, preparer: (doc: jsPDF) => void): Promise<Blob> {
   const edl = normaliser(source)
   const signe = edl.statut === 'signe' && !!edl.cloture
   const photos = await db.photos.where('edlId').equals(edl.id).sortBy('numero')
@@ -163,6 +200,7 @@ export async function genererRapport(source: Edl, avancement: Avancement = () =>
   const grilleValidee = edl.grilleVetuste ? edl.grilleVetuste.validee : parametres.grilleValidee
 
   const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true })
+  preparer(doc)
   const brut = (dataUrl: string) => dataUrl.slice(dataUrl.indexOf(',') + 1)
   for (const [fichier, donnees, style] of [
     ['Nunito-Regular.ttf', nunitoRegular, 'normal'],
@@ -585,7 +623,7 @@ export async function genererRapport(source: Edl, avancement: Avancement = () =>
     const lc = (LU - 6) / 2
     const hc = 46
     for (let i = 0; i < signataires.length; i++) {
-      const s = signataires[i] as (typeof signataires)[number] & { signatureId?: string; absent?: boolean; motifAbsence?: string }
+      const s = signataires[i] as (typeof signataires)[number] & { signatureId?: string; absent?: boolean; motifAbsence?: string; repriseDe?: string }
       if (i % 2 === 0) place(hc + 4)
       const x = M + (i % 2) * (lc + 6)
       doc.setDrawColor(...TRAIT)
@@ -603,6 +641,10 @@ export async function genererRapport(source: Edl, avancement: Avancement = () =>
           const zl = lc - 8, zh = hc - 16
           const k = Math.min(zl / p.l, zh / p.h)
           doc.addImage(p.data, 'PNG', x + 4 + (zl - p.l * k) / 2, y + 13 + (zh - p.h * k) / 2, p.l * k, p.h * k)
+        }
+        if (s.repriseDe) {
+          police(7, 'italic', 'Nunito', GRIS)
+          doc.text(t(`Signature reprise de l'état des lieux ${s.repriseDe}, avec l'accord du signataire`), x + 4, y + hc - 2.5)
         }
       } else if (s.absent) {
         police(9, 'italic', 'Nunito', OR)
