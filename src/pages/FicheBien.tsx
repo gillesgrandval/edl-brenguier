@@ -5,8 +5,9 @@ import { ArrowLeft, Building2, ChevronRight, ClipboardList, Plus, Trash2, Wand2 
 import { db } from '../db/base'
 import { maintenantLocal } from '../db/edl'
 import { LIBELLE_CATEGORIE, creerEdlDepuisBien, enregistrerBien, supprimerBien } from '../db/patrimoine'
-import type { Bien, CategorieBien, EquipementConnu, TypeCompteur } from '../db/types'
+import type { Bien, CategorieBien, EquipementConnu, GenreElement, TypeCompteur } from '../db/types'
 import { MODELES } from '../modeles/pieces'
+import { GENRES } from '../modeles/comptes'
 import { compositionDepuisTableau } from '../patrimoine/importExcel'
 import { LIBELLE_ACTE, formatDate } from '../libelles'
 import { Champ, Confirmation, Interrupteur, Section } from '../components/ui'
@@ -184,6 +185,7 @@ export default function FicheBien() {
                       {m.nom}
                     </option>
                   ))}
+                  <option value="libre">Pièce personnalisée (rubriques de base)</option>
                 </select>
               </label>
               <Champ
@@ -198,6 +200,32 @@ export default function FicheBien() {
                 large
               />
             </div>
+            <div className="grille grille-nombres">
+              {(Object.keys(GENRES) as GenreElement[]).map((g) => (
+                <label key={g} className="champ">
+                  <span className="champ-label">{g === 'climatisation' ? 'Climatisations' : GENRES[g].libelle}</span>
+                  <input
+                    className="saisie"
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    max={99}
+                    placeholder="Non renseigné"
+                    value={p.quantites?.[g] ?? ''}
+                    onChange={(e) =>
+                      maj((x) => {
+                        const v = e.target.value === '' ? undefined : Math.max(0, Math.min(99, Math.round(Number(e.target.value))))
+                        const q = { ...x.pieces[i].quantites }
+                        if (v === undefined || Number.isNaN(v)) delete q[g]
+                        else q[g] = v
+                        x.pieces[i].quantites = Object.keys(q).length ? q : undefined
+                      })
+                    }
+                  />
+                </label>
+              ))}
+            </div>
+            <p className="texte-doux" style={{ marginTop: 4 }}>Nombres connus, repris « à vérifier » lors de chaque visite. Laisser vide si inconnu.</p>
             <button className="bouton bouton-discret bouton-petit bouton-danger-texte" onClick={() => maj((x) => void x.pieces.splice(i, 1))}>
               <Trash2 size={18} /> Retirer la pièce
             </button>

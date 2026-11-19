@@ -154,8 +154,11 @@ const ANNEXES_PIECES: [RegExp, string, string][] = [
   [/garage|box/, 'garage', 'Garage / box'],
   [/cave/, 'cave', 'Cave'],
   [/jardin/, 'jardin', 'Jardin'],
-  [/balcon|terrasse|loggia/, 'balcon', 'Balcon / terrasse'],
-  [/cellier|buanderie/, 'buanderie', 'Cellier'],
+  [/terrasse/, 'terrasse', 'Terrasse'],
+  [/balcon|loggia/, 'balcon', 'Balcon'],
+  [/veranda/, 'veranda', 'Véranda'],
+  [/cellier/, 'cellier', 'Cellier'],
+  [/buanderie/, 'buanderie', 'Buanderie'],
 ]
 
 /**
@@ -192,7 +195,9 @@ export function compositionDepuisTableau(b: Pick<Bien, 'categorie' | 'chambres' 
       note = 'Emplacement à confirmer lors de la visite'
     }
     if (!p) continue
-    const e: EquipementConnu = { libelle: eq, ...(note ? { note } : {}) }
+    // Une climatisation connue remplace l'élément « Climatisation » du modèle (son nombre reste à constater).
+    const remplace = /clim/.test(t) ? 'Climatisation' : undefined
+    const e: EquipementConnu = { libelle: eq, ...(remplace ? { remplace, categorie: 'chauffage' as const } : {}), ...(note ? { note } : {}) }
     p.equipements = [...(p.equipements ?? []), e]
   }
   return pieces

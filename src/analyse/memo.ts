@@ -1,4 +1,5 @@
 import type { Element, Etat, Fonctionnement, Piece } from '../db/types'
+import { genreDe } from '../modeles/comptes'
 
 /* ------------------------------------------------------------------
    Analyse d'un mémo vocal de pièce, 100 % sur la tablette.
@@ -366,7 +367,7 @@ export function analyserMemo(memo: string, piece: Piece): Analyse {
     }
   }
 
-  const nbEtatGeneral = etatGeneral ? piece.elements.filter((e) => !e.etat && !props.has(e.id)).length : 0
+  const nbEtatGeneral = etatGeneral ? piece.elements.filter((e) => !e.etat && !props.has(e.id) && genreDe(e) !== 'climatisation').length : 0
   return { propositions: [...props.values()], etatGeneral, nbEtatGeneral, commentairePiece }
 }
 
@@ -376,18 +377,20 @@ export function appliquerAnalyse(piece: Piece, a: Analyse, retenues: Set<string>
     if (!retenues.has(p.elementId)) continue
     const el = piece.elements.find((e) => e.id === p.elementId)
     if (!el) continue
-    if (p.etat) el.etat = p.etat
+    // Climatisation : l'état se saisit unité par unité.
+    const clim = genreDe(el) === 'climatisation'
+    if (p.etat && !clim) el.etat = p.etat
     for (const o of p.observations) if (!el.observations.includes(o)) el.observations.push(o)
     if (p.localisation && !el.localisation) el.localisation = p.localisation
     if (p.trousChevilles) el.trousChevilles = p.trousChevilles
-    if (p.fonctionnement && el.equipement) el.fonctionnement = p.fonctionnement
+    if (p.fonctionnement && el.equipement && !clim) el.fonctionnement = p.fonctionnement
     if (p.aNettoyer) el.aNettoyer = true
     const extrait = p.extraits.join(' — ')
     if (extrait && !el.commentaire?.includes(extrait)) el.commentaire = el.commentaire ? `${el.commentaire} ${extrait}` : extrait
   }
   if (appliquerGeneral && a.etatGeneral) {
     const cites = new Set(a.propositions.map((p) => p.elementId))
-    for (const el of piece.elements) if (!el.etat && !cites.has(el.id)) el.etat = a.etatGeneral
+    for (const el of piece.elements) if (!el.etat && !cites.has(el.id) && genreDe(el) !== 'climatisation') el.etat = a.etatGeneral
   }
   if (a.commentairePiece.length) {
     const txt = a.commentairePiece.join('. ')

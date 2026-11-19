@@ -828,3 +828,25 @@ input[type="search"]::-webkit-search-cancel-button { display: none; }
 .entete-accueil { flex: none; }
 .entete-nav { min-width: 0; overflow-x: auto; scrollbar-width: none; }
 @media (max-width: 560px) { .aide-onglets button svg { display: none; } .aide-onglets button { font-size: 15px; padding: 0 6px; } }
+
+/* --- Éléments comptés (prises, interrupteurs, points lumineux, climatisation) --- */
+.nombre-ligne { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.compteur .compteur-vide { color: var(--trait-fort); }
+.nombre-statut { margin: 10px 0 0; font-size: 15px; font-weight: 700; }
+.nombre-statut.nombre-vide { color: var(--texte-doux); font-weight: 400; font-style: italic; }
+.nombre-statut.nombre-a-verifier { color: var(--alerte-texte); background: var(--alerte-fond); border: 1px solid var(--alerte-bord); border-radius: 8px; padding: 6px 10px; display: inline-block; }
+.nombre-statut.nombre-constate { color: var(--succes-texte); }
+.nombre-statut + .bouton { margin-top: 10px; }
+
+.carte-unite { border: 1.5px solid var(--trait); border-left: 4px solid var(--accent); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; background: var(--fond-doux); }
+.carte-unite-titre { font-size: 17px; margin-bottom: 10px; color: var(--principal); }
+.carte-unite-pied { display: flex; justify-content: flex-end; margin-top: 10px; }
+.carte-unite .bloc { margin-top: 12px; }
+.boutons-etat-compacts .bouton-etat { min-height: 60px; }
+.boutons-etat-compacts .bouton-etat-code { width: 28px; height: 28px; font-size: 12px; }
+
+.liste-cases { display: flex; flex-direction: column; gap: 6px; margin: 12px 0; }
+.ligne-case { display: flex; align-items: center; gap: 12px; min-height: var(--cible); padding: 6px 10px; border: 1px solid var(--trait); border-radius: 10px; background: var(--surface); }
+.ligne-case input { width: 24px; height: 24px; accent-color: var(--principal); flex-shrink: 0; }
+.grille-nombres { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 12px; }
+@media (max-width: 640px) { .grille-nombres { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

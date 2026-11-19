@@ -8,19 +8,25 @@ import {
   CheckCheck,
   ChevronDown,
   Copy,
+  Hash,
   MessageSquareText,
   Mic,
   Pencil,
   Plus,
   Sparkles,
   Trash2,
-  Wrench, Lock } from 'lucide-react'
+  Wrench,
+  Lock,
+  Minus,
+} from 'lucide-react'
 import { useEdl } from '../hooks/useEdl'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { elementsParId, evolution } from '../db/sortie'
 import { db, nouvelId } from '../db/base'
 import { progressionPiece } from '../db/edl'
-import type { Categorie, Element, Etat, Fonctionnement, Piece as TPiece } from '../db/types'
+import type { Categorie, Element, Etat, Fonctionnement, GenreElement, Piece as TPiece, UniteClim } from '../db/types'
+import { constatsPiece, elementFait, fixerNombre, genreDe, GENRES, majSyntheseClim, photosElement, texteNombre, uniteVide } from '../modeles/comptes'
+import { copieVierge, creerElement, ELEMENTS_COMPTES } from '../modeles/pieces'
 import { ETATS } from '../libelles'
 import { LIBELLE_CATEGORIE, LOCALISATIONS, NATURES, OBSERVATIONS } from '../modeles/listes'
 import { enregistrerPhoto, supprimerPhotos } from '../photos/traitement'
@@ -55,7 +61,7 @@ export default function Piece() {
   useEffect(() => {
     if (piece && initPour !== piece.id) {
       setInitPour(piece.id)
-      setOuvert(piece.elements.find((e) => !e.etat)?.id ?? null)
+      setOuvert(piece.elements.find((e) => !elementFait(e))?.id ?? null)
       window.scrollTo({ top: 0 })
     }
   }, [piece, initPour])
@@ -93,12 +99,12 @@ export default function Piece() {
 
   function elementSuivant(apres: string) {
     const i = piece!.elements.findIndex((e) => e.id === apres)
-    const prochain = [...piece!.elements.slice(i + 1), ...piece!.elements.slice(0, i)].find((e) => !e.etat && e.id !== apres)
+    const prochain = [...piece!.elements.slice(i + 1), ...piece!.elements.slice(0, i)].find((e) => !elementFait(e) && e.id !== apres)
     setOuvert(prochain?.id ?? null)
     if (!prochain) window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
   }
 
-  async function ajouterPhotos(fichiers: File[], element?: Element) {
+  async function ajouterPhotos(fichiers: File[], element?: Element, uniteId?: string) {
     setTraitement(fichiers.length)
     try {
       for (const f of fichiers) {
@@ -109,9 +115,14 @@ export default function Piece() {
           pieceId: piece!.id,
           pieceNom: piece!.nom,
           elementId: element?.id,
-          elementNom: element?.libelle,
+          elementNom: element ? element.libelle + (uniteId ? ` — unité ${(element.unites ?? []).findIndex((u) => u.id === uniteId) + 1}` : '') : undefined,
         })
-        if (element) majElement(element.id, (el) => void el.photoIds.push(photoId))
+        if (element && uniteId)
+          majElement(element.id, (el) => {
+            el.unites?.find((u) => u.id === uniteId)?.photoIds.push(photoId)
+            delete el.quantiteSource
+          })
+        else if (element) majElement(element.id, (el) => void el.photoIds.push(photoId))
         else majPiece((p) => void p.photoIds.push(photoId))
         setTraitement((n) => n - 1)
       }
@@ -122,19 +133,25 @@ export default function Piece() {
     }
   }
 
-  async function supprimerPhoto(photoId: string, element?: Element) {
+  async function supprimerPhoto(photoId: string, element?: Element, uniteId?: string) {
     await supprimerPhotos([photoId])
-    if (element) majElement(element.id, (el) => void (el.photoIds = el.photoIds.filter((x) => x !== photoId)))
+    if (element && uniteId)
+      majElement(element.id, (el) => {
+        const u = el.unites?.find((x) => x.id === uniteId)
+        if (u) u.photoIds = u.photoIds.filter((x) => x !== photoId)
+      })
+    else if (element) majElement(element.id, (el) => void (el.photoIds = el.photoIds.filter((x) => x !== photoId)))
     else majPiece((p) => void (p.photoIds = p.photoIds.filter((x) => x !== photoId)))
   }
 
   function toutEnBonEtat() {
-    majPiece((p) => p.elements.forEach((el) => void (el.etat ??= 'bon')))
+    // La climatisation n'est jamais présumée : son nombre et l'état de chaque unité se constatent.
+    majPiece((p) => p.elements.forEach((el) => void (genreDe(el) !== 'climatisation' && (el.etat ??= 'bon'))))
     setOuvert(null)
   }
 
   async function supprimerPiece() {
-    await supprimerPhotos([...piece!.photoIds, ...piece!.elements.flatMap((e) => e.photoIds)])
+    await supprimerPhotos([...piece!.photoIds, ...piece!.elements.flatMap(photosElement)])
     modifier((e) => void (e.pieces = e.pieces.filter((p) => p.id !== piece!.id)))
     navigate(`/edl/${edl!.id}`, { replace: true })
   }
@@ -147,7 +164,7 @@ export default function Piece() {
       modele: piece!.modele,
       nom: `${base} ${n}`,
       photoIds: [],
-      elements: piece!.elements.map((el) => ({ id: nouvelId(), libelle: el.libelle, categorie: el.categorie, equipement: el.equipement, nature: el.nature, observations: [], photoIds: [] })),
+      elements: piece!.elements.map(copieVierge),
     }
     modifier((e) => void e.pieces.splice(index + 1, 0, copie))
     navigate(`/edl/${edl!.id}/piece/${copie.id}`, { replace: true })
@@ -231,12 +248,12 @@ export default function Piece() {
               maj={(f) => majElement(el.id, f)}
               onSuivant={() => elementSuivant(el.id)}
               onSupprimer={async () => {
-                await supprimerPhotos(el.photoIds)
+                await supprimerPhotos(photosElement(el))
                 majPiece((p) => void (p.elements = p.elements.filter((x) => x.id !== el.id)))
               }}
               traitement={traitement}
-              onPhotos={(f) => ajouterPhotos(f, el)}
-              onSupprimerPhoto={(pid) => supprimerPhoto(pid, el)}
+              onPhotos={(f, u) => ajouterPhotos(f, el, u)}
+              onSupprimerPhoto={(pid, u) => supprimerPhoto(pid, el, u)}
             />
           </div>
         ))}
@@ -309,8 +326,8 @@ export default function Piece() {
         ouvert={confirmerSuppression}
         danger
         titre={`Supprimer « ${piece.nom} » ?`}
-        message="Tous ses éléments, observations et photos seront effacés."
-        libelleOk="Supprimer la pièce"
+        message={<MessageSuppressionPiece piece={piece} dansEntree={!!entree?.size && piece.elements.some((e) => entree.has(e.id))} />}
+        libelleOk={constatsPiece(piece).constats + constatsPiece(piece).photos > 0 ? 'Supprimer la pièce et ses constatations' : 'Supprimer la pièce'}
         onAnnuler={() => setConfirmerSuppression(false)}
         onOk={supprimerPiece}
       />
@@ -318,8 +335,8 @@ export default function Piece() {
       {ajout && (
         <AjoutElement
           onAnnuler={() => setAjout(false)}
-          onAjouter={(libelle, categorie, equipement) => {
-            const el: Element = { id: nouvelId(), libelle, categorie, equipement, observations: [], photoIds: [] }
+          dejaPresents={piece.elements.map(genreDe).filter((g) => g !== undefined)}
+          onAjouter={(el) => {
             majPiece((p) => void p.elements.push(el))
             setAjout(false)
             setOuvert(el.id)
@@ -346,13 +363,17 @@ function CarteElement(props: {
   onSuivant: () => void
   onSupprimer: () => void
   traitement: number
-  onPhotos: (f: File[]) => void
-  onSupprimerPhoto: (id: string) => void
+  onPhotos: (f: File[], uniteId?: string) => void
+  onSupprimerPhoto: (id: string, uniteId?: string) => void
 }) {
   const { element: el, maj } = props
+  const genre = genreDe(el)
+  const clim = genre === 'climatisation'
   const etat = ETATS.find((e) => e.cle === el.etat)
+  const fait = elementFait(el)
   const [confirmer, setConfirmer] = useState(false)
-  const resume = [el.nature, ...el.observations, el.trousChevilles ? `${el.trousChevilles} trou(s) de cheville` : '', el.aNettoyer ? 'À nettoyer' : '']
+  const nombre = genre ? (el.quantite === undefined ? '' : texteNombre(genre, el.quantite) + (el.quantiteSource ? ' (à vérifier)' : '')) : ''
+  const resume = [nombre, el.nature, ...el.observations, el.trousChevilles ? `${el.trousChevilles} trou(s) de cheville` : '', el.aNettoyer ? 'À nettoyer' : '']
     .filter(Boolean)
     .join(' · ')
 
@@ -360,24 +381,24 @@ function CarteElement(props: {
     maj((e) => void (e[liste] = e[liste].includes(v) ? e[liste].filter((x) => x !== v) : [...e[liste], v]))
 
   return (
-    <div className={`carte-element ${props.ouvert ? 'carte-element-ouverte' : ''} ${el.etat ? 'carte-element-faite' : ''}`}>
+    <div className={`carte-element ${props.ouvert ? 'carte-element-ouverte' : ''} ${fait ? 'carte-element-faite' : ''}`}>
       <button className="carte-element-entete" onClick={props.onBasculer} aria-expanded={props.ouvert}>
         <span className="pastille-etat" style={{ background: etat?.couleur ?? 'transparent', borderColor: etat?.couleur ?? 'var(--trait)' }}>
-          {etat ? etat.code : ''}
+          {etat ? etat.code : clim && fait ? '0' : ''}
         </span>
         <span className="carte-element-titre">
           <strong>{el.libelle}</strong>
           {!props.ouvert && (resume || etat) && (
             <span className="carte-element-resume">
               {etat?.libelle}
-              {resume ? ` — ${resume}` : ''}
+              {resume ? `${etat ? ' — ' : ''}${resume}` : ''}
             </span>
           )}
         </span>
         {props.entree !== undefined && <PastilleEntree entree={props.entree} sortie={el} />}
-        {el.photoIds.length > 0 && (
+        {photosElement(el).length > 0 && (
           <span className="compte-photos">
-            <Camera size={15} /> {el.photoIds.length}
+            <Camera size={15} /> {photosElement(el).length}
           </span>
         )}
         <ChevronDown className="chevron" />
@@ -386,56 +407,51 @@ function CarteElement(props: {
       {props.ouvert && (
         <fieldset className="carte-element-corps" disabled={props.verrouille}>
           {props.entree && <RappelEntree entree={props.entree} />}
+
+          {/* Nombre (prises, interrupteurs, points lumineux, climatisations) */}
+          {genre && <ChampNombre element={el} maj={maj} />}
+
+          {/* Climatisation : une fiche par unité */}
+          {clim && (
+            <BlocUnites
+              element={el}
+              maj={maj}
+              verrouille={props.verrouille}
+              traitement={props.traitement}
+              onPhotos={props.onPhotos}
+              onSupprimerPhoto={props.onSupprimerPhoto}
+            />
+          )}
+
           {/* État */}
-          <div className="bloc">
-            <div className="bloc-titre">État</div>
-            <div className="boutons-etat">
-              {ETATS.map((e) => (
-                <button
-                  key={e.cle}
-                  type="button"
-                  className={`bouton-etat ${el.etat === e.cle ? 'bouton-etat-actif' : ''}`}
-                  style={{ '--couleur': e.couleur } as React.CSSProperties}
-                  onClick={() => maj((x) => void (x.etat = x.etat === e.cle ? undefined : (e.cle as Etat)))}
-                >
-                  <span className="bouton-etat-code">{e.code}</span>
-                  <span className="bouton-etat-libelle">{e.libelle}</span>
-                </button>
-              ))}
+          {!clim && (
+            <div className="bloc">
+              <div className="bloc-titre">{genre ? 'État général' : 'État'}</div>
+              <BoutonsEtat valeur={el.etat} onChange={(v) => maj((x) => void (x.etat = v))} />
             </div>
-          </div>
+          )}
 
           {/* Fonctionnement */}
-          {el.equipement && (
+          {el.equipement && !clim && (
             <div className="bloc">
               <div className="bloc-titre">
                 <Wrench size={16} /> Fonctionnement
               </div>
-              <div className="segment segment-large">
-                {(
-                  [
-                    ['ok', 'Testé OK'],
-                    ['defaillant', 'Défaillant'],
-                    ['non_teste', 'Non testé'],
-                  ] as [Fonctionnement, string][]
-                ).map(([v, l]) => (
-                  <button key={v} type="button" className={el.fonctionnement === v ? `segment-actif fonct-${v}` : ''} onClick={() => maj((x) => void (x.fonctionnement = x.fonctionnement === v ? undefined : v))}>
-                    {l}
-                  </button>
-                ))}
-              </div>
+              <SegmentFonctionnement valeur={el.fonctionnement} onChange={(v) => maj((x) => void (x.fonctionnement = v))} />
             </div>
           )}
 
           {/* Nature */}
-          <div className="bloc">
-            <div className="bloc-titre">Nature / matériau</div>
-            <Puces options={NATURES[el.categorie]} choisies={el.nature ? [el.nature] : []} onBasculer={(v) => maj((x) => void (x.nature = x.nature === v ? undefined : v))} />
-          </div>
+          {!clim && (
+            <div className="bloc">
+              <div className="bloc-titre">Nature / matériau</div>
+              <Puces options={NATURES[el.categorie]} choisies={el.nature ? [el.nature] : []} onBasculer={(v) => maj((x) => void (x.nature = x.nature === v ? undefined : v))} />
+            </div>
+          )}
 
           {/* Observations */}
           <div className="bloc">
-            <div className="bloc-titre">Observations</div>
+            <div className="bloc-titre">{genre ? 'Observations, dysfonctionnements' : 'Observations'}</div>
             <Puces options={OBSERVATIONS} choisies={el.observations} onBasculer={(v) => basculer('observations', v)} />
             {el.observations.length > 0 && (
               <div style={{ marginTop: 14 }}>
@@ -445,16 +461,20 @@ function CarteElement(props: {
             )}
           </div>
 
-          <div className="bloc bloc-ligne">
-            <div className="ligne-compteur">
-              <span>Trous de chevilles</span>
-              <Compteur valeur={el.trousChevilles ?? 0} max={99} onChange={(v) => maj((x) => void (x.trousChevilles = v || undefined))} />
+          {!clim && (
+            <div className="bloc bloc-ligne">
+              <div className="ligne-compteur">
+                <span>Trous de chevilles</span>
+                <Compteur valeur={el.trousChevilles ?? 0} max={99} onChange={(v) => maj((x) => void (x.trousChevilles = v || undefined))} />
+              </div>
+              {!genre && (
+                <div className="ligne-compteur">
+                  <span>Quantité</span>
+                  <Compteur valeur={el.quantite ?? 1} min={0} max={99} onChange={(v) => maj((x) => void (x.quantite = v === 1 ? undefined : v))} />
+                </div>
+              )}
             </div>
-            <div className="ligne-compteur">
-              <span>Quantité</span>
-              <Compteur valeur={el.quantite ?? 1} min={0} max={99} onChange={(v) => maj((x) => void (x.quantite = v === 1 ? undefined : v))} />
-            </div>
-          </div>
+          )}
           <div className="bloc bloc-ligne">
             <Interrupteur libelle="À nettoyer" valeur={!!el.aNettoyer} onChange={(v) => maj((x) => void (x.aNettoyer = v || undefined))} />
             <Interrupteur libelle="Sous réserve" valeur={!!el.reserve} onChange={(v) => maj((x) => void (x.reserve = v || undefined))} />
@@ -465,10 +485,10 @@ function CarteElement(props: {
           {/* Photos */}
           <div className="bloc">
             <div className="bloc-titre">
-              <Camera size={16} /> Photos {el.photoIds.length > 0 && `(${el.photoIds.length})`}
+              <Camera size={16} /> {clim ? 'Photos générales' : 'Photos'} {el.photoIds.length > 0 && `(${el.photoIds.length})`}
             </div>
-            {!props.verrouille && <BoutonsPhoto onFichiers={props.onPhotos} enCours={props.traitement} />}
-            <GaleriePhotos ids={el.photoIds} onSupprimer={props.onSupprimerPhoto} />
+            {!props.verrouille && <BoutonsPhoto onFichiers={(f) => props.onPhotos(f)} enCours={props.traitement} />}
+            <GaleriePhotos ids={el.photoIds} onSupprimer={(pid) => props.onSupprimerPhoto(pid)} />
           </div>
 
           <div className="carte-element-pied">
@@ -488,7 +508,7 @@ function CarteElement(props: {
               </button>
             )}
             <button type="button" className="bouton bouton-principal" onClick={props.onSuivant}>
-              {el.etat ? <Check size={20} /> : null} Élément suivant <ArrowRight size={20} />
+              {fait ? <Check size={20} /> : null} Élément suivant <ArrowRight size={20} />
             </button>
           </div>
         </fieldset>
@@ -496,6 +516,235 @@ function CarteElement(props: {
     </div>
   )
 }
+
+function BoutonsEtat(props: { valeur?: Etat; onChange: (v: Etat | undefined) => void; compact?: boolean }) {
+  return (
+    <div className={`boutons-etat ${props.compact ? 'boutons-etat-compacts' : ''}`}>
+      {ETATS.map((e) => (
+        <button
+          key={e.cle}
+          type="button"
+          className={`bouton-etat ${props.valeur === e.cle ? 'bouton-etat-actif' : ''}`}
+          style={{ '--couleur': e.couleur } as React.CSSProperties}
+          onClick={() => props.onChange(props.valeur === e.cle ? undefined : (e.cle as Etat))}
+        >
+          <span className="bouton-etat-code">{e.code}</span>
+          <span className="bouton-etat-libelle">{e.libelle}</span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function SegmentFonctionnement(props: { valeur?: Fonctionnement; onChange: (v: Fonctionnement | undefined) => void }) {
+  return (
+    <div className="segment segment-large">
+      {(
+        [
+          ['ok', 'Testé OK'],
+          ['defaillant', 'Défaillant'],
+          ['non_teste', 'Non testé'],
+        ] as [Fonctionnement, string][]
+      ).map(([v, l]) => (
+        <button key={v} type="button" className={props.valeur === v ? `segment-actif fonct-${v}` : ''} onClick={() => props.onChange(props.valeur === v ? undefined : v)}>
+          {l}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * Nombre d'un élément compté, avec trois situations bien distinctes :
+ * non renseigné (—), aucun (0), nombre constaté. Un nombre repris de la fiche
+ * ou de l'entrée est signalé « à vérifier » jusqu'à confirmation.
+ */
+function ChampNombre({ element: el, maj }: { element: Element; maj: (f: (el: Element) => void) => void }) {
+  const genre = genreDe(el)!
+  const g = GENRES[genre]
+  const n = el.quantite
+  const src = el.quantiteSource
+  function fixer(v: number | undefined) {
+    // Climatisation : on ne retire jamais une unité déjà renseignée par ce biais.
+    const essai = structuredClone(el)
+    if (!fixerNombre(essai, v)) {
+      alert('Une unité déjà renseignée ne peut pas être retirée ainsi : utilisez « Retirer cette unité » sur sa fiche.')
+      return
+    }
+    maj((x) => void fixerNombre(x, v))
+  }
+  const statut =
+    n === undefined
+      ? 'Non renseigné'
+      : src
+        ? `${texteNombre(genre, n)} — repris ${src === 'fiche' ? 'de la fiche du bien' : "de l'état des lieux d'entrée"}, à vérifier`
+        : `${texteNombre(genre, n)} — constaté`
+  return (
+    <div className="bloc">
+      <div className="bloc-titre">
+        <Hash size={16} /> Nombre {genre === 'climatisation' ? "d'unités de climatisation" : `de ${g.unite[1]}`}
+      </div>
+      <div className="nombre-ligne">
+        <div className="compteur" aria-label={`Nombre de ${g.unite[1]}`}>
+          <button type="button" disabled={n === 0} onClick={() => fixer(n === undefined ? 0 : n - 1)} aria-label="Moins">
+            <Minus size={20} />
+          </button>
+          <span className={n !== undefined ? 'compteur-actif' : 'compteur-vide'}>{n ?? '—'}</span>
+          <button type="button" disabled={(n ?? 0) >= 99} onClick={() => fixer((n ?? 0) + 1)} aria-label="Plus">
+            <Plus size={20} />
+          </button>
+        </div>
+        <button type="button" className={`puce ${n === 0 && !src ? 'puce-active' : ''}`} onClick={() => fixer(0)}>
+          {g.aucun}
+        </button>
+        {n !== undefined && (
+          <button type="button" className="bouton bouton-discret bouton-petit" onClick={() => fixer(undefined)}>
+            Non renseigné
+          </button>
+        )}
+      </div>
+      <p className={`nombre-statut ${n === undefined ? 'nombre-vide' : src ? 'nombre-a-verifier' : 'nombre-constate'}`}>{statut}</p>
+      {src && (
+        <button
+          type="button"
+          className="bouton bouton-accent bouton-petit"
+          onClick={() =>
+            maj((x) => {
+              delete x.quantiteSource
+              if (genre === 'climatisation') majSyntheseClim(x)
+            })
+          }
+        >
+          <Check size={18} /> Confirmer : {texteNombre(genre, n)}
+        </button>
+      )}
+    </div>
+  )
+}
+
+/** Climatisation : fiche de chaque unité (type, marque, état, fonctionnement, observations, photos). */
+function BlocUnites(props: {
+  element: Element
+  maj: (f: (el: Element) => void) => void
+  verrouille: boolean
+  traitement: number
+  onPhotos: (f: File[], uniteId?: string) => void
+  onSupprimerPhoto: (id: string, uniteId?: string) => void
+}) {
+  const { element: el, maj } = props
+  const unites = el.unites ?? []
+  const [aRetirer, setARetirer] = useState<string>()
+  const majUnite = (id: string, f: (u: UniteClim) => void) =>
+    maj((x) => {
+      const u = x.unites?.find((k) => k.id === id)
+      if (!u) return
+      f(u)
+      // Renseigner une unité sur place vaut constat du nombre.
+      delete x.quantiteSource
+      majSyntheseClim(x)
+    })
+  async function retirer(u: UniteClim) {
+    for (const pid of u.photoIds) props.onSupprimerPhoto(pid, u.id)
+    maj((x) => {
+      x.unites = (x.unites ?? []).filter((k) => k.id !== u.id)
+      x.quantite = x.unites.length
+      if (!x.unites.length) delete x.unites
+      delete x.quantiteSource
+      majSyntheseClim(x)
+    })
+    setARetirer(undefined)
+  }
+  if (!unites.length) return null
+  const synthese = ETATS.find((e) => e.cle === el.etat)
+  return (
+    <div className="bloc">
+      {unites.map((u, i) => (
+        <div key={u.id} className="carte-unite">
+          <div className="carte-unite-titre">
+            <strong>Unité {i + 1}</strong>
+            {u.etat && <span className="texte-doux"> — {ETATS.find((e) => e.cle === u.etat)?.libelle}</span>}
+          </div>
+          <div className="bloc-sous-titre">Type</div>
+          <div className="segment">
+            {(
+              [
+                [true, 'Réversible'],
+                [false, 'Froid seul'],
+              ] as [boolean, string][]
+            ).map(([v, l]) => (
+              <button key={l} type="button" className={u.reversible === v ? 'segment-actif' : ''} onClick={() => majUnite(u.id, (x) => void (x.reversible = x.reversible === v ? undefined : v))}>
+                {l}
+              </button>
+            ))}
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <Champ label="Marque / modèle" valeur={u.marque} onChange={(v) => majUnite(u.id, (x) => void (x.marque = v || undefined))} placeholder="ex. Daikin FTXM25" />
+          </div>
+          <div className="bloc-sous-titre" style={{ marginTop: 12 }}>
+            État apparent
+          </div>
+          <BoutonsEtat compact valeur={u.etat} onChange={(v) => majUnite(u.id, (x) => void (x.etat = v))} />
+          <div className="bloc-sous-titre" style={{ marginTop: 12 }}>
+            Fonctionnement constaté
+          </div>
+          <SegmentFonctionnement valeur={u.fonctionnement} onChange={(v) => majUnite(u.id, (x) => void (x.fonctionnement = v))} />
+          <ChampCommentaire label="Observations" valeur={u.commentaire} onChange={(v) => majUnite(u.id, (x) => void (x.commentaire = v || undefined))} />
+          <div className="bloc-sous-titre">
+            <Camera size={14} /> Photos de l'unité {u.photoIds.length > 0 && `(${u.photoIds.length})`}
+          </div>
+          {!props.verrouille && <BoutonsPhoto onFichiers={(f) => props.onPhotos(f, u.id)} enCours={props.traitement} />}
+          <GaleriePhotos ids={u.photoIds} onSupprimer={(pid) => props.onSupprimerPhoto(pid, u.id)} />
+          {!props.verrouille && (
+            <div className="carte-unite-pied">
+              {aRetirer === u.id ? (
+                <span className="confirmation-ligne">
+                  {uniteVide(u) ? `Retirer l'unité ${i + 1} ?` : `Retirer l'unité ${i + 1} et ce qui a été saisi ?`}
+                  <button type="button" className="bouton bouton-discret bouton-petit" onClick={() => setARetirer(undefined)}>
+                    Non
+                  </button>
+                  <button type="button" className="bouton bouton-danger bouton-petit" onClick={() => retirer(u)}>
+                    Retirer
+                  </button>
+                </span>
+              ) : (
+                <button type="button" className="bouton bouton-discret bouton-petit bouton-danger-texte" onClick={() => setARetirer(u.id)}>
+                  <Trash2 size={16} /> Retirer cette unité
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+      <p className="texte-doux">
+        État d'ensemble : {synthese ? `${synthese.code} — ${synthese.libelle} (le moins bon des unités)` : 'à compléter sur chaque unité'}
+      </p>
+    </div>
+  )
+}
+
+/** Avertissement avant de supprimer une pièce : ce qui sera perdu. */
+function MessageSuppressionPiece({ piece, dansEntree }: { piece: TPiece; dansEntree: boolean }) {
+  const { constats, photos } = constatsPiece(piece)
+  return (
+    <>
+      {constats + photos === 0 ? (
+        <p>Cette pièce ne contient encore aucune constatation.</p>
+      ) : (
+        <p>
+          <strong>
+            Attention : {constats > 0 && `${constats} élément${constats > 1 ? 's' : ''} déjà renseigné${constats > 1 ? 's' : ''}`}
+            {constats > 0 && photos > 0 && ' et '}
+            {photos > 0 && `${photos} photo${photos > 1 ? 's' : ''}`}
+          </strong>{' '}
+          seront définitivement effacés.
+        </p>
+      )}
+      {dansEntree && <p>Cette pièce figure à l'état des lieux d'entrée : elle apparaîtra comme non constatée dans le comparatif.</p>}
+      <p className="texte-doux">La fiche permanente du bien n'est pas modifiée.</p>
+    </>
+  )
+}
+
 
 function ChampCommentaire(props: { label: string; valeur?: string; onChange: (v: string) => void }) {
   return (
@@ -510,10 +759,10 @@ function ChampCommentaire(props: { label: string; valeur?: string; onChange: (v:
 }
 
 // =====================================================================
-// Ajout d'un élément libre
+// Ajout d'un élément (élément compté en un geste, ou élément libre)
 // =====================================================================
 
-function AjoutElement(props: { onAnnuler: () => void; onAjouter: (libelle: string, c: Categorie, equipement: boolean) => void }) {
+function AjoutElement(props: { onAnnuler: () => void; onAjouter: (el: Element) => void; dejaPresents: GenreElement[] }) {
   const [libelle, setLibelle] = useState('')
   const [categorie, setCategorie] = useState<Categorie>('equipement')
   const [equipement, setEquipement] = useState(false)
@@ -527,6 +776,18 @@ function AjoutElement(props: { onAnnuler: () => void; onAjouter: (libelle: strin
       <h2>
         <Sparkles size={22} /> Ajouter un élément
       </h2>
+      <div className="bloc-sous-titre">En un geste</div>
+      <div className="puces">
+        {ELEMENTS_COMPTES.map((d) => (
+          <button key={d[0]} type="button" className="puce" onClick={() => props.onAjouter(creerElement(d))}>
+            <Plus size={16} /> {d[0]}
+            {props.dejaPresents.includes(d[3]!) ? ' (déjà présent)' : ''}
+          </button>
+        ))}
+      </div>
+      <div className="bloc-sous-titre" style={{ marginTop: 20 }}>
+        Ou un autre élément
+      </div>
       <Champ label="Nom de l'élément" valeur={libelle} onChange={setLibelle} placeholder="ex. Interphone vidéo, Store banne…" />
       <div className="bloc-sous-titre" style={{ marginTop: 16 }}>
         Catégorie
@@ -545,13 +806,14 @@ function AjoutElement(props: { onAnnuler: () => void; onAjouter: (libelle: strin
         <button className="bouton bouton-discret" onClick={props.onAnnuler}>
           Annuler
         </button>
-        <button className="bouton bouton-principal" disabled={!libelle.trim()} onClick={() => props.onAjouter(libelle.trim(), categorie, equipement)}>
+        <button className="bouton bouton-principal" disabled={!libelle.trim()} onClick={() => props.onAjouter(creerElement([libelle.trim(), categorie, equipement]))}>
           <Plus size={20} /> Ajouter
         </button>
       </div>
     </dialog>
   )
 }
+
 
 /** Sortie : rappel de l'état d'entrée dans l'en-tête de l'élément, et alerte si l'état s'est dégradé. */
 function PastilleEntree({ entree, sortie }: { entree: Element | null; sortie: Element }) {
@@ -569,7 +831,9 @@ function PastilleEntree({ entree, sortie }: { entree: Element | null; sortie: El
 /** Sortie : ce qui avait été constaté à l'entrée pour cet élément. */
 function RappelEntree({ entree }: { entree: Element }) {
   const e = ETATS.find((x) => x.cle === entree.etat)
-  const details = [entree.nature, ...entree.observations, entree.localisation, entree.commentaire].filter(Boolean).join(' · ')
+  const g = genreDe(entree)
+  const nombre = g && entree.quantite !== undefined ? texteNombre(g, entree.quantite) : ''
+  const details = [nombre, entree.nature, ...entree.observations, entree.localisation, entree.commentaire].filter(Boolean).join(' · ')
   return (
     <div className="rappel-entree">
       <strong>À l'entrée :</strong> {e ? `${e.code} — ${e.libelle}` : 'état non renseigné'}

@@ -1,5 +1,6 @@
-import type { Categorie, Element, Piece, PieceBien, TypeBien } from '../db/types'
+import type { Categorie, Element, GenreElement, Piece, PieceBien, TypeBien } from '../db/types'
 import { nouvelId } from '../db/base'
+import { genreDe, genreParLibelle, uniteVierge } from './comptes'
 
 /* ------------------------------------------------------------------
    Modèles de pièces et d'éléments, par type de bien.
@@ -8,8 +9,8 @@ import { nouvelId } from '../db/base'
    (Ils deviendront modifiables dans les Paramètres à l'étape 9.)
    ------------------------------------------------------------------ */
 
-/** [libellé, catégorie, équipement à tester ?] */
-type Def = [string, Categorie, boolean?]
+/** [libellé, catégorie, équipement à tester ?, élément compté ?] */
+type Def = [string, Categorie, boolean?, GenreElement?]
 
 export interface ModelePiece {
   cle: string
@@ -34,14 +35,22 @@ const MENUISERIES: Def[] = [
   ['Fenêtre(s)', 'menuiserie'],
   ['Volets / stores', 'menuiserie', true],
 ]
-const ELECTRICITE: Def[] = [
-  ['Prises électriques', 'electricite', true],
-  ['Interrupteurs', 'electricite', true],
-  ['Éclairage / points lumineux', 'electricite', true],
-]
+// Prises, interrupteurs et points lumineux : trois éléments distincts, chacun avec son nombre.
+const PRISES: Def = ['Prises électriques', 'electricite', true, 'prises']
+const INTERRUPTEURS: Def = ['Interrupteurs', 'electricite', true, 'interrupteurs']
+const POINTS_LUMINEUX: Def = ['Points lumineux', 'electricite', true, 'points_lumineux']
+const ELECTRICITE: Def[] = [PRISES, INTERRUPTEURS, POINTS_LUMINEUX]
 const CHAUFFAGE: Def[] = [['Radiateur / chauffage', 'chauffage', true]]
+/** Nombre d'unités à constater sur place (0, 1, 2…) : jamais présumé d'après la fiche du logement. */
+const CLIMATISATION: Def = ['Climatisation', 'chauffage', true, 'climatisation']
 
-const PIECE_DE_VIE: Def[] = [...MENUISERIES, ...SOL_MURS_PLAFOND, ...ELECTRICITE, ...CHAUFFAGE]
+const PIECE_DE_VIE: Def[] = [...MENUISERIES, ...SOL_MURS_PLAFOND, ...ELECTRICITE, ...CHAUFFAGE, CLIMATISATION]
+
+/** Rubriques de base d'une pièce personnalisée : murs, sols, plafonds, menuiseries, électricité, chauffage. */
+export const RUBRIQUES_BASE: Def[] = [...PIECE_DE_VIE]
+
+/** Éléments comptés proposés en un geste dans « Ajouter un élément ». */
+export const ELEMENTS_COMPTES: Def[] = [PRISES, INTERRUPTEURS, POINTS_LUMINEUX, CLIMATISATION]
 const COIN_CUISINE: Def[] = [
   ['Crédence', 'revetement'],
   ['Plan de travail', 'equipement'],
@@ -136,7 +145,8 @@ export const MODELES: ModelePiece[] = [
       ['Lave-mains', 'plomberie'],
       ['Robinetterie', 'plomberie', true],
       ['VMC / aération', 'equipement', true],
-      ['Éclairage / points lumineux', 'electricite', true],
+      INTERRUPTEURS,
+      POINTS_LUMINEUX,
     ],
   },
   {
@@ -163,22 +173,64 @@ export const MODELES: ModelePiece[] = [
     ],
   },
   {
-    cle: 'degagement',
-    nom: 'Couloir / dégagement',
-    biens: ['appartement', 'maison'],
+    cle: 'couloir',
+    nom: 'Couloir',
+    biens: ['appartement', 'maison', 'local'],
     parDefaut: { appartement: 1, maison: 1 },
     elements: [...SOL_MURS_PLAFOND, ['Placard', 'menuiserie'], ...ELECTRICITE],
   },
   {
-    cle: 'buanderie',
-    nom: 'Buanderie / cellier',
+    cle: 'degagement',
+    nom: 'Dégagement',
+    biens: ['appartement', 'maison', 'local'],
+    parDefaut: {},
+    elements: [...SOL_MURS_PLAFOND, ['Placard', 'menuiserie'], ...ELECTRICITE],
+  },
+  {
+    cle: 'dressing',
+    nom: 'Dressing',
     biens: ['appartement', 'maison'],
     parDefaut: {},
-    elements: [['Porte', 'menuiserie'], ...SOL_MURS_PLAFOND, ['Arrivée / évacuation lave-linge', 'plomberie', true], ...ELECTRICITE],
+    elements: [['Porte', 'menuiserie'], ...SOL_MURS_PLAFOND, ['Penderie / étagères', 'equipement'], ...ELECTRICITE],
+  },
+  {
+    cle: 'buanderie',
+    nom: 'Buanderie',
+    biens: ['appartement', 'maison'],
+    parDefaut: {},
+    elements: [['Porte', 'menuiserie'], ['Fenêtre(s)', 'menuiserie'], ...SOL_MURS_PLAFOND, ['Arrivée / évacuation lave-linge', 'plomberie', true], ...ELECTRICITE],
+  },
+  {
+    cle: 'cellier',
+    nom: 'Cellier',
+    biens: ['appartement', 'maison'],
+    parDefaut: {},
+    elements: [['Porte', 'menuiserie'], ...SOL_MURS_PLAFOND, ['Étagères', 'equipement'], ...ELECTRICITE],
+  },
+  {
+    cle: 'veranda',
+    nom: 'Véranda',
+    biens: ['appartement', 'maison'],
+    parDefaut: {},
+    elements: [['Baies / châssis vitrés', 'menuiserie'], ['Volets / stores', 'menuiserie', true], ['Sol', 'revetement'], ['Murs', 'revetement'], ['Toiture / plafond', 'revetement'], ...ELECTRICITE, ...CHAUFFAGE, CLIMATISATION],
+  },
+  {
+    cle: 'terrasse',
+    nom: 'Terrasse',
+    biens: ['appartement', 'maison'],
+    parDefaut: {},
+    elements: [
+      ['Sol', 'exterieur'],
+      ['Garde-corps', 'exterieur'],
+      ['Murs / façade', 'exterieur'],
+      ['Évacuation eaux pluviales', 'exterieur'],
+      ['Prises extérieures', 'electricite', true, 'prises'],
+      ['Éclairage extérieur', 'electricite', true, 'points_lumineux'],
+    ],
   },
   {
     cle: 'balcon',
-    nom: 'Balcon / terrasse',
+    nom: 'Balcon',
     biens: ['appartement', 'maison'],
     parDefaut: {},
     elements: [
@@ -194,7 +246,7 @@ export const MODELES: ModelePiece[] = [
     nom: 'Cave',
     biens: ['appartement', 'maison'],
     parDefaut: {},
-    elements: [['Porte', 'menuiserie'], ['Serrure / cadenas', 'menuiserie', true], ['Sol', 'revetement'], ['Murs', 'revetement'], ['Plafond', 'revetement'], ['Éclairage / points lumineux', 'electricite', true]],
+    elements: [['Porte', 'menuiserie'], ['Serrure / cadenas', 'menuiserie', true], ['Sol', 'revetement'], ['Murs', 'revetement'], ['Plafond', 'revetement'], INTERRUPTEURS, POINTS_LUMINEUX],
   },
   {
     cle: 'garage',
@@ -207,8 +259,7 @@ export const MODELES: ModelePiece[] = [
       ['Sol', 'revetement'],
       ['Murs', 'revetement'],
       ['Plafond', 'revetement'],
-      ['Prises électriques', 'electricite', true],
-      ['Éclairage / points lumineux', 'electricite', true],
+      ...ELECTRICITE,
     ],
   },
   {
@@ -296,7 +347,8 @@ export const MODELES: ModelePiece[] = [
       ...SOL_MURS_PLAFOND,
       ...ELECTRICITE,
       ['Prises RJ45', 'electricite'],
-      ['Chauffage / climatisation', 'chauffage', true],
+      ['Chauffage', 'chauffage', true],
+      CLIMATISATION,
     ],
   },
   {
@@ -314,7 +366,8 @@ export const MODELES: ModelePiece[] = [
       ['Vestiaires', 'equipement'],
       ['Chauffe-eau', 'plomberie', true],
       ['VMC / aération', 'equipement', true],
-      ['Éclairage / points lumineux', 'electricite', true],
+      INTERRUPTEURS,
+      POINTS_LUMINEUX,
     ],
   },
   {
@@ -328,7 +381,8 @@ export const MODELES: ModelePiece[] = [
       ['Chaudière / production de chaleur', 'chauffage', true],
       ['Sol', 'revetement'],
       ['Murs', 'revetement'],
-      ['Éclairage / points lumineux', 'electricite', true],
+      INTERRUPTEURS,
+      POINTS_LUMINEUX,
     ],
   },
   {
@@ -407,8 +461,34 @@ export function modele(cle: string): ModelePiece | undefined {
   return MODELES.find((m) => m.cle === cle)
 }
 
-function creerElement([libelle, categorie, equipement]: Def): Element {
-  return { id: nouvelId(), libelle, categorie, equipement: !!equipement, observations: [], photoIds: [] }
+export function creerElement([libelle, categorie, equipement, genre]: Def): Element {
+  const el: Element = { id: nouvelId(), libelle, categorie, equipement: !!equipement, observations: [], photoIds: [] }
+  const g = genre ?? genreParLibelle(libelle)
+  if (g) el.genre = g
+  return el
+}
+
+/** Pièce personnalisée (nom libre) : reçoit toutes les rubriques de base. */
+export function creerPieceLibre(nom: string): Piece {
+  return { id: nouvelId(), modele: 'libre', nom, elements: RUBRIQUES_BASE.map(creerElement), photoIds: [] }
+}
+
+/** Copie vide d'un élément (même nature, sans aucune constatation), pour dupliquer une pièce. */
+export function copieVierge(el: Element): Element {
+  const c: Element = { id: nouvelId(), libelle: el.libelle, categorie: el.categorie, equipement: el.equipement, nature: el.nature, observations: [], photoIds: [] }
+  const g = genreDe(el)
+  if (g) c.genre = g
+  return c
+}
+
+/**
+ * Reporte un nombre connu à l'avance (fiche du bien) : il est marqué « à vérifier ».
+ * Climatisation : autant d'unités vierges que d'unités connues.
+ */
+export function prerenseignerNombre(el: Element, n: number, source: 'fiche' | 'entree'): void {
+  el.quantite = n
+  el.quantiteSource = source
+  if (genreDe(el) === 'climatisation') el.unites = n > 0 ? Array.from({ length: n }, uniteVierge) : undefined
 }
 
 /**
@@ -451,16 +531,33 @@ export function creerPiecesDepuisBien(compo: PieceBien[]): Piece[] {
   const parModele = new Map<string, number>()
   for (const p of compo) parModele.set(p.modele, (parModele.get(p.modele) ?? 0) + 1)
   return compo.map((p) => {
-    const m = modele(p.modele) ?? modele('sejour')!
+    // Pièce personnalisée : rubriques de base.
+    const m = p.modele === 'libre' ? { cle: 'libre', nom: p.nom, elements: RUBRIQUES_BASE } : (modele(p.modele) ?? modele('sejour')!)
     const elements = m.elements.map(creerElement)
     for (const eq of p.equipements ?? []) {
       const nouveau: Element = {
         ...creerElement([eq.libelle, eq.categorie ?? 'equipement', true]),
         commentaire: eq.note,
       }
-      const i = eq.remplace ? elements.findIndex((e) => e.libelle.toLowerCase() === eq.remplace!.toLowerCase()) : -1
-      if (i >= 0) elements[i] = { ...nouveau, categorie: eq.categorie ?? elements[i].categorie }
+      let i = eq.remplace ? elements.findIndex((e) => e.libelle.toLowerCase() === eq.remplace!.toLowerCase()) : -1
+      // Élément compté connu (ex. « Climatisation réversible ») : remplace l'élément du même genre, sans doublon.
+      if (i < 0 && nouveau.genre) i = elements.findIndex((e) => genreDe(e) === nouveau.genre)
+      if (i >= 0) {
+        const g = nouveau.genre ?? elements[i].genre
+        elements[i] = { ...nouveau, categorie: eq.categorie ?? elements[i].categorie, ...(g ? { genre: g } : {}) }
+      }
       else if (!elements.some((e) => e.libelle.toLowerCase() === eq.libelle.toLowerCase())) elements.push(nouveau)
+    }
+    // Nombres connus (prises, interrupteurs, points lumineux, climatisations) : à vérifier sur place.
+    for (const [genre, n] of Object.entries(p.quantites ?? {}) as [GenreElement, number][]) {
+      if (n === undefined) continue
+      let el = elements.find((e) => genreDe(e) === genre)
+      if (!el) {
+        const def = ELEMENTS_COMPTES.find((d) => d[3] === genre)!
+        el = creerElement(def)
+        elements.push(el)
+      }
+      prerenseignerNombre(el, n, 'fiche')
     }
     return { id: nouvelId(), modele: m.cle, nom: p.nom || m.nom, elements, photoIds: [] }
   })

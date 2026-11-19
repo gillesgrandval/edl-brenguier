@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowDown, ArrowUp, Camera, Check, ListOrdered, Plus } from 'lucide-react'
 import { majEdl, progressionPiece } from '../db/edl'
 import type { Edl } from '../db/types'
-import { creerPieces, modelesPour } from '../modeles/pieces'
-import { nouvelId } from '../db/base'
+import { creerPieceLibre, creerPieces, modelesPour } from '../modeles/pieces'
+import { photosElement } from '../modeles/comptes'
 import { BarreProgression, Champ, Section } from './ui'
 
 /** Liste des pièces du tableau de bord : ouverture, ajout, réorganisation. */
@@ -42,7 +42,7 @@ export default function BlocPieces({ edl }: { edl: Edl }) {
           if (p.modele === 'mobilier') return null
           const pr = progressionPiece(p)
           const finie = pr.total > 0 && pr.faits === pr.total
-          const photos = p.photoIds.length + p.elements.reduce((n, e) => n + e.photoIds.length, 0)
+          const photos = p.photoIds.length + p.elements.reduce((n, e) => n + photosElement(e).length, 0)
           return (
             <div key={p.id} className={`carte tuile-piece ${finie ? 'tuile-piece-finie' : ''}`} role="button" tabIndex={0} onClick={() => !ordre && navigate(`/edl/${edl.id}/piece/${p.id}`)}>
               <div className="tuile-piece-haut">
@@ -94,7 +94,7 @@ function AjoutPiece({ edl, onFermer }: { edl: Edl; onFermer: () => void }) {
   async function ajouter(cle: string | null) {
     const nouvelles = cle
       ? creerPieces({ [cle]: 1 }, edl.typeBien)
-      : [{ id: nouvelId(), modele: 'libre', nom: libre.trim(), elements: [], photoIds: [] }]
+      : [creerPieceLibre(libre.trim())]
     const piece = nouvelles[0]
     // Numérote si une pièce du même nom existe déjà (« Chambre 3 »).
     const memes = edl.pieces.filter((p) => p.nom.replace(/\s*\d+$/, '') === piece.nom).length
@@ -115,11 +115,11 @@ function AjoutPiece({ edl, onFermer }: { edl: Edl; onFermer: () => void }) {
         ))}
       </div>
       <div className="bloc-sous-titre" style={{ marginTop: 20 }}>
-        Ou une pièce personnalisée (vide, vous ajoutez les éléments)
+        Ou une pièce personnalisée : elle reçoit les rubriques de base (porte, fenêtre, sol, murs, plafond, prises, interrupteurs, points lumineux, chauffage, climatisation), à compléter ou retirer
       </div>
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
         <div style={{ flex: 1 }}>
-          <Champ label="Nom" valeur={libre} onChange={setLibre} placeholder="ex. Mezzanine, Véranda…" />
+          <Champ label="Nom" valeur={libre} onChange={setLibre} placeholder="ex. Mezzanine, Bureau, Atelier…" />
         </div>
         <button className="bouton bouton-principal" disabled={!libre.trim()} onClick={() => ajouter(null)}>
           Créer

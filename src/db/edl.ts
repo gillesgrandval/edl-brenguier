@@ -1,4 +1,5 @@
 import { db, nouvelId } from './base'
+import { elementFait } from '../modeles/comptes'
 import type { Cle, Edl, Piece, ReleveCompteur } from './types'
 import { lireParametres } from './parametres'
 
@@ -69,7 +70,7 @@ export async function supprimerEdl(id: string): Promise<void> {
 
 export function progressionPiece(p: Piece): { faits: number; total: number } {
   const total = p.elements.length
-  const faits = p.elements.filter((e) => !!e.etat).length
+  const faits = p.elements.filter(elementFait).length
   return { faits, total }
 }
 

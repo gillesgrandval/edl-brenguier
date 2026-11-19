@@ -34,7 +34,7 @@ export const BIENS_INTEGRES: Bien[] = [
         equipements: [
           { libelle: 'Cuisine meublée', categorie: 'equipement' },
           { libelle: 'Hotte aspirante', categorie: 'equipement', remplace: 'Hotte' },
-          { libelle: 'Climatisation réversible', categorie: 'chauffage', note: 'Emplacement à confirmer lors de la visite' },
+          { libelle: 'Climatisation réversible', categorie: 'chauffage', remplace: 'Climatisation', note: 'Emplacement à confirmer lors de la visite' },
         ],
       },
       { modele: 'chambre', nom: 'Chambre 1' },
@@ -47,7 +47,7 @@ export const BIENS_INTEGRES: Bien[] = [
           { libelle: 'Sèche-serviettes', categorie: 'chauffage', remplace: 'Sèche-serviettes / radiateur' },
         ],
       },
-      { modele: 'buanderie', nom: 'Cellier' },
+      { modele: 'cellier', nom: 'Cellier' },
       { modele: 'parking', nom: 'Place de parking' },
     ],
     compteurs: ['eau_froide', 'electricite'],

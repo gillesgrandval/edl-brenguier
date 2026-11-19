@@ -17,12 +17,23 @@ import { autoTable, type CellHookData, type RowInput } from 'jspdf-autotable'
 import { db } from '../db/base'
 import { normaliser } from '../db/edl'
 import { empreinteLisible } from '../db/cloture'
-import type { Edl, Element, Photo } from '../db/types'
+import type { Edl, Element, Etat, Photo } from '../db/types'
+import { texteNombre } from '../modeles/comptes'
 import { ETATS, LIBELLE_BIEN, formatDate } from '../libelles'
 import { CHARTE, rvb } from '../theme/charte'
 import { comparer, consommation, elementsParId } from '../db/sortie'
 import { lireParametres } from '../db/parametres'
 // Charte Groupe Brenguier : logo et police de texte Nunito (licence libre OFL).
+/**
+ * Libellé d'un élément dans le tableau, avec son nombre.
+ * Seuls les éléments comptés créés avec cette version portent un genre explicite :
+ * les rapports des états des lieux plus anciens restent présentés comme avant.
+ */
+export function libelleElement(e: Element): string {
+  if (e.genre) return `${e.libelle} — ${texteNombre(e.genre, e.quantite)}${e.quantite !== undefined && e.quantiteSource ? ' (à vérifier)' : ''}`
+  return `${e.libelle}${e.quantite && e.quantite > 1 ? ` (x${e.quantite})` : ''}`
+}
+
 import logoSignature from './ressources/logo-signature-bleu.png?inline'
 import logoIcone from './ressources/logo-icone-bleu.png?inline'
 import nunitoRegular from './ressources/Nunito-Regular.ttf?inline'
@@ -373,33 +384,52 @@ export async function genererRapport(source: Edl, avancement: Avancement = () =>
     doc.line(M, y + 4.5, M + 18, y + 4.5)
     y += 10
 
-    const etats = piece.elements.map((e) => e.etat)
     // Sortie : colonne « Entrée » (état constaté à l'entrée) avant l'état de sortie.
     const avecEntree = !!avant
-    const etatsEntree = piece.elements.map((e) => avant?.get(e.id)?.etat)
     const colEtat = avecEntree ? 3 : 2
+    const code = (x?: string) => (x ? (ETATS.find((k) => k.cle === x)?.code ?? '') : '-')
+    // Une ligne par élément, plus une ligne par unité de climatisation.
+    const lignes: { cells: string[]; etat?: Etat; etatEntree?: Etat; unite?: boolean }[] = []
+    for (const e of piece.elements) {
+      const ent = avant?.get(e.id)
+      const ligne = [
+        t(libelleElement(e)),
+        t(e.nature),
+        code(e.etat),
+        e.equipement && e.fonctionnement ? t(FONCTIONNEMENT[e.fonctionnement]) : '',
+        observations(e),
+        nums(e.photoIds),
+      ]
+      if (avecEntree) ligne.splice(2, 0, ent ? code(ent.etat) : 'Ajouté')
+      lignes.push({ cells: ligne, etat: e.etat, etatEntree: ent?.etat })
+      ;(e.unites ?? []).forEach((u, i) => {
+        const uEnt = ent?.unites?.find((x) => x.id === u.id)
+        const desc = [u.reversible === true ? 'réversible' : u.reversible === false ? 'froid seul' : '', u.marque].filter(Boolean).join(', ')
+        const l = [
+          t(`   Unité ${i + 1}${desc ? ` (${desc})` : ''}`),
+          '',
+          code(u.etat),
+          u.fonctionnement ? t(FONCTIONNEMENT[u.fonctionnement]) : '',
+          t(u.commentaire),
+          nums(u.photoIds),
+        ]
+        if (avecEntree) l.splice(2, 0, ent ? code(uEnt?.etat) : '')
+        lignes.push({ cells: l, etat: u.etat, etatEntree: uEnt?.etat, unite: true })
+      })
+    }
+    const etats = lignes.map((l) => l.etat)
+    const etatsEntree = lignes.map((l) => l.etatEntree)
     autoTable(doc, {
       ...styleTableau,
       startY: y,
       head: [avecEntree ? ['Élément', 'Nature', 'Entrée', 'Sortie', 'Fonct.', 'Observations', 'Photos'] : ['Élément', 'Nature', 'État', 'Fonct.', 'Observations', 'Photos']],
-      body: piece.elements.map((e): RowInput => {
-        const code = (x?: string) => (x ? (ETATS.find((k) => k.cle === x)?.code ?? '') : '-')
-        const ligne = [
-          t(`${e.libelle}${e.quantite && e.quantite > 1 ? ` (x${e.quantite})` : ''}`),
-          t(e.nature),
-          code(e.etat),
-          e.equipement && e.fonctionnement ? t(FONCTIONNEMENT[e.fonctionnement]) : '',
-          observations(e),
-          nums(e.photoIds),
-        ]
-        if (avecEntree) ligne.splice(2, 0, avant!.has(e.id) ? code(avant!.get(e.id)!.etat) : 'Ajouté')
-        return ligne
-      }),
+      body: lignes.map((l): RowInput => l.cells),
       columnStyles: avecEntree
         ? { 0: { cellWidth: 34, fontStyle: 'bold' }, 1: { cellWidth: 22 }, 2: { cellWidth: 13, halign: 'center' }, 3: { cellWidth: 13, halign: 'center', fontStyle: 'bold' }, 4: { cellWidth: 16 }, 6: { cellWidth: 15 } }
         : { 0: { cellWidth: 38, fontStyle: 'bold' }, 1: { cellWidth: 26 }, 2: { cellWidth: 12, halign: 'center', fontStyle: 'bold' }, 3: { cellWidth: 17 }, 5: { cellWidth: 16 } },
       didParseCell: (d: CellHookData) => {
         if (d.section !== 'body') return
+        if (d.column.index === 0 && lignes[d.row.index]?.unite) d.cell.styles.fontStyle = 'normal'
         if (d.column.index === colEtat) {
           const etat = etats[d.row.index]
           if (etat) {

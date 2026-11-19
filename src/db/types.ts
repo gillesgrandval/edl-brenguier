@@ -42,7 +42,18 @@ export interface Element {
   /** true pour un équipement dont on teste le fonctionnement. */
   equipement: boolean
   nature?: string
+  /**
+   * Éléments ordinaires : nombre d’exemplaires (absent = 1).
+   * Éléments comptés (prises, interrupteurs, points lumineux, climatisation) :
+   * absent = non renseigné ; 0 = aucun ; n = nombre constaté (voir quantiteSource).
+   */
   quantite?: number
+  /** Élément compté : nombre repris de la fiche du bien ou de l’entrée, À VÉRIFIER (absent = constaté sur place). */
+  quantiteSource?: SourceQuantite
+  /** Nature particulière, qui ajoute une saisie dédiée (nombre, unités de climatisation). */
+  genre?: GenreElement
+  /** Climatisation : une fiche par unité. */
+  unites?: UniteClim[]
   etat?: Etat
   fonctionnement?: Fonctionnement
   trousChevilles?: number
@@ -50,6 +61,23 @@ export interface Element {
   reserve?: boolean
   observations: string[]
   localisation?: string
+  commentaire?: string
+  photoIds: string[]
+}
+
+/** Éléments dont on saisit le nombre dans chaque pièce. */
+export type GenreElement = 'prises' | 'interrupteurs' | 'points_lumineux' | 'climatisation'
+
+export type SourceQuantite = 'fiche' | 'entree'
+
+/** Unité de climatisation d’une pièce. */
+export interface UniteClim {
+  id: string
+  /** true = réversible (chaud / froid), false = froid seul, absent = non précisé. */
+  reversible?: boolean
+  marque?: string
+  etat?: Etat
+  fonctionnement?: Fonctionnement
   commentaire?: string
   photoIds: string[]
 }
@@ -276,6 +304,8 @@ export interface PieceBien {
   modele: string
   nom: string
   equipements?: EquipementConnu[]
+  /** Nombres connus (prises, interrupteurs, points lumineux, climatisations), à vérifier à chaque visite. */
+  quantites?: Partial<Record<GenreElement, number>>
 }
 
 /**

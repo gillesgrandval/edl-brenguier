@@ -34,8 +34,10 @@ Un état des lieux préparé à l'avance peut avoir un type « à définir » et
 Il montre ce qui reste à faire : pourcentage d'avancement, rappels (type à définir, relevés à effectuer), informations générales, pièces, rubriques, clôture.
 
 - Touchez une pièce pour la saisir.
-- Vous pouvez **ajouter, renommer ou réordonner** les pièces.
-- Les modifications d'un état des lieux ne changent **pas** la fiche permanente du bien.
+- Vous pouvez **ajouter, renommer ou réordonner** les pièces, à tout moment de la visite : entrée, couloir, dégagement, dressing, buanderie, cellier, véranda, terrasse, garage… ou une **pièce personnalisée** (nom libre), qui reçoit toutes les rubriques de base (porte, fenêtre, sol, murs, plafond, prises, interrupteurs, points lumineux, chauffage, climatisation).
+- **Supprimer une pièce** (en bas de l'écran de la pièce) : l'application prévient si elle contient déjà des constatations ou des photos.
+- Les modifications d'un état des lieux ne changent **pas** la fiche permanente du bien. Si des pièces ont été ajoutées ou des nombres constatés, le tableau de bord propose **« Mettre à jour la fiche du bien ? »** : vous cochez ce qui doit servir aux prochaines visites.
+- Dans un écran de pièce, **« Ajouter un élément »** propose en un geste : prises, interrupteurs, points lumineux, climatisation.
 
 ## Saisir une pièce
 
@@ -45,11 +47,20 @@ Chaque élément (sol, murs, porte, prises…) se remplit en quelques touches :
 - **Fonctionnement** pour les équipements : testé OK, défaillant, non testé.
 - **Nature / matériau**, **observations** (rayures, taches, trous…), **localisation**, nombre de **trous de chevilles**, « à nettoyer ».
 - **Photos** : bouton « Photo » (appareil photo) ou « Galerie ». Chaque photo est numérotée, horodatée et légendée.
+
+**Prises, interrupteurs, points lumineux** : trois éléments distincts, chacun avec son **nombre** (boutons − et +), en plus de l'état.
+
+- **—** (« Non renseigné ») : le nombre n'est pas connu. Ce n'est jamais bloquant.
+- **Aucun** : il n'y en a pas (zéro).
+- **Un nombre** : constaté sur place.
+- Un nombre repris de la fiche du bien ou de l'état des lieux d'entrée est signalé **« à vérifier »** : touchez « Confirmer » après l'avoir compté.
+
+**Climatisation** : indiquez le nombre d'unités dans la pièce (0, 1, 2…). Rien n'est présumé, même si la fiche du logement mentionne une climatisation. Chaque unité a sa fiche : réversible ou froid seul, marque / modèle, état apparent, fonctionnement, observations, photos. L'état d'ensemble est celui de l'unité la moins bonne.
 - **Annoter** une photo : ouvrez-la → « Annoter » → flèche, cercle, rectangle, trait libre ou texte.
 
 Raccourcis :
 
-- **« Tout le reste en bon état »** : met « BE » sur tous les éléments non encore renseignés.
+- **« Tout le reste en bon état »** : met « BE » sur tous les éléments non encore renseignés (sauf la climatisation, toujours à constater).
 - **« Dicter la pièce »** : décrivez à voix haute ce que vous voyez (« les murs sont en bon état, une tache sur la porte côté fenêtre, deux trous dans le mur… »). L'application propose de remplir les éléments correspondants ; vous cochez ce qui est juste.
 - Le **micro** à côté des zones de commentaire permet de dicter un texte.
 
@@ -108,7 +119,7 @@ La vétusté suit la grille des Paramètres. Les montants sont des estimations, 
 ## Patrimoine
 
 - **Liste** avec recherche et filtres (ville, type, résidence, société).
-- **Fiche d'un bien** : identification, adresse, caractéristiques, **composition** (pièces et équipements de la visite), compteurs à relever, historique de ses états des lieux, et « Préparer l'état des lieux ».
+- **Fiche d'un bien** : identification, adresse, caractéristiques, **composition** (pièces, équipements et nombres connus de prises, interrupteurs, points lumineux et climatisations, repris « à vérifier » à chaque visite), compteurs à relever, historique de ses états des lieux, et « Préparer l'état des lieux ».
 - **Importer depuis Excel** : un bien par ligne, une ligne d'en-têtes. L'application reconnaît les colonnes (modifiable), affiche un aperçu avec les erreurs, puis importe. Réimporter un fichier met à jour les biens **sans doublon**, et ne touche jamais aux états des lieux. Un modèle vide est téléchargeable.
 
 ## Paramètres

@@ -27,7 +27,8 @@ describe('Mémo vocal — exemple donné par l’utilisateur', () => {
   })
   it('applique « bon état » au reste de la pièce', () => {
     expect(a.etatGeneral).toBe('bon')
-    expect(a.nbEtatGeneral).toBe(p.elements.length - 1)
+    // La climatisation est exclue : son état se saisit unité par unité.
+    expect(a.nbEtatGeneral).toBe(p.elements.filter((e) => e.genre !== 'climatisation').length - 1)
   })
 })
 
@@ -120,6 +121,6 @@ describe('Mémo vocal — cas courants', () => {
     const el = p.elements.find((e) => e.libelle === 'Murs')!
     expect(el.observations).toContain('Trous')
     expect(el.commentaire).toContain('mur est')
-    expect(p.elements.every((e) => e.etat)).toBe(true)
+    expect(p.elements.filter((e) => e.genre !== 'climatisation').every((e) => e.etat)).toBe(true)
   })
 })

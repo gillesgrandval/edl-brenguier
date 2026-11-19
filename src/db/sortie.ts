@@ -8,6 +8,7 @@
    ------------------------------------------------------------------ */
 
 import { db, nouvelId } from './base'
+import { genreDe } from '../modeles/comptes'
 import { normaliser, prochaineReference } from './edl'
 import type { Degradation, Edl, Element, Etat, Piece } from './types'
 import { GRILLE_VETUSTE, ageEnAnnees, categorieVetuste, tauxVetuste, type CategorieVetuste, type LigneGrille } from '../modeles/vetuste'
@@ -29,16 +30,27 @@ export function evolution(entree: Element | undefined, sortie: Element): Evoluti
 export async function creerSortieDepuisEntree(entree: Edl): Promise<string> {
   const maintenant = new Date().toISOString()
   const e = normaliser(entree)
-  const vierge = (el: Element): Element => ({
-    id: el.id,
-    libelle: el.libelle,
-    categorie: el.categorie,
-    equipement: el.equipement,
-    nature: el.nature,
-    quantite: el.quantite,
-    observations: [],
-    photoIds: [],
-  })
+  const vierge = (el: Element): Element => {
+    const v: Element = {
+      id: el.id,
+      libelle: el.libelle,
+      categorie: el.categorie,
+      equipement: el.equipement,
+      nature: el.nature,
+      quantite: el.quantite,
+      observations: [],
+      photoIds: [],
+    }
+    const genre = genreDe(el)
+    if (genre) {
+      v.genre = genre
+      // Nombre constaté à l'entrée : repris, mais à vérifier à la sortie.
+      if (el.quantite !== undefined) v.quantiteSource = 'entree'
+      // Mêmes unités (mêmes identifiants) que l'entrée, sans constatation.
+      if (el.unites?.length) v.unites = el.unites.map((u) => ({ id: u.id, reversible: u.reversible, marque: u.marque, photoIds: [] }))
+    }
+    return v
+  }
   const pieces: Piece[] = e.pieces.map((p) => ({ id: p.id, modele: p.modele, nom: p.nom, dimensions: p.dimensions, elements: p.elements.map(vierge), photoIds: [] }))
   const d = new Date()
   const pad = (n: number) => String(n).padStart(2, '0')

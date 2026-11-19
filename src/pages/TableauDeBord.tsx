@@ -25,6 +25,7 @@ import { ICONE_BIEN } from '../components/icones'
 import BlocPieces from '../components/BlocPieces'
 import BlocRubriques from '../components/BlocRubriques'
 import BoutonsRapport from '../components/BoutonsRapport'
+import MiseAJourFiche from '../components/MiseAJourFiche'
 import { bienDepuisEdl } from '../db/patrimoine'
 import { creerSortieDepuisEntree } from '../db/sortie'
 
@@ -128,6 +129,7 @@ export default function TableauDeBord() {
           <ChevronRight />
         </button>
       )}
+      <MiseAJourFiche edl={edl} />
       {edl.bienId && (
         <button className="carte tuile-ligne" style={{ marginBottom: 12 }} onClick={() => navigate(`/patrimoine/${edl.bienId}`)}>
           <span className="tuile-ligne-icone">

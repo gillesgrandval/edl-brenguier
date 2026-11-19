@@ -6,7 +6,8 @@
 
 import { db, nouvelId } from './base'
 import { normaliser, prochaineReference } from './edl'
-import type { Bien, CategorieBien, Edl, ReleveCompteur, TypeBien, TypeCompteur } from './types'
+import type { Bien, CategorieBien, Edl, GenreElement, Piece, PieceBien, ReleveCompteur, TypeBien, TypeCompteur } from './types'
+import { genreDe, texteNombre } from '../modeles/comptes'
 import { creerPiecesDepuisBien } from '../modeles/pieces'
 import { lireParametres } from './parametres'
 
@@ -203,7 +204,10 @@ export async function bienDepuisEdl(edl: Edl): Promise<string> {
     meuble: edl.meuble,
     societe: edl.bailleur.raisonSociale || undefined,
     annexes: [...edl.bien.annexes],
-    pieces: edl.pieces.filter((p) => p.modele !== 'mobilier').map((p) => ({ modele: p.modele, nom: p.nom })),
+    pieces: edl.pieces.filter((p) => p.modele !== 'mobilier').map((p) => {
+      const q = nombresConstates(p)
+      return { modele: p.modele, nom: p.nom, ...(q ? { quantites: q } : {}) }
+    }),
     compteurs: [...new Set((edl.compteurs ?? []).filter((c) => !c.nonApplicable && c.type !== 'autre').map((c) => c.type))],
   }
   await db.transaction('rw', db.biens, db.edls, async () => {
@@ -213,4 +217,71 @@ export async function bienDepuisEdl(edl: Edl): Promise<string> {
     if (e && e.statut !== 'signe') await db.edls.update(edl.id, { bienId: fiche.id })
   })
   return fiche.id
+}
+
+// --- Mise à jour de la fiche après une visite ------------------------------
+
+/** Nombres CONSTATÉS dans une pièce (ceux encore « à vérifier » sont ignorés). */
+export function nombresConstates(p: Piece): PieceBien['quantites'] {
+  const q: Partial<Record<GenreElement, number>> = {}
+  for (const e of p.elements) {
+    const g = genreDe(e)
+    if (!g || e.quantite === undefined || e.quantiteSource) continue
+    q[g] = (q[g] ?? 0) + e.quantite
+  }
+  return Object.keys(q).length ? q : undefined
+}
+
+export type EcartFiche =
+  | { cle: string; type: 'piece'; libelle: string; piece: PieceBien }
+  | { cle: string; type: 'nombre'; libelle: string; index: number; genre: GenreElement; valeur: number }
+
+const nomPiece = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ')
+
+/**
+ * Différences entre ce qui a été constaté pendant une visite et la fiche permanente du bien :
+ * pièces ajoutées, nombres de prises / interrupteurs / points lumineux / climatisations.
+ * Rien n'est appliqué automatiquement : l'utilisateur choisit.
+ */
+export function ecartsFiche(edl: Edl, bien: Bien): EcartFiche[] {
+  const ecarts: EcartFiche[] = []
+  for (const p of edl.pieces) {
+    if (p.modele === 'mobilier') continue
+    const i = bien.pieces.findIndex((b) => nomPiece(b.nom) === nomPiece(p.nom))
+    const q = nombresConstates(p)
+    if (i < 0) {
+      ecarts.push({ cle: `piece-${p.id}`, type: 'piece', libelle: `Ajouter la pièce « ${p.nom} »`, piece: { modele: p.modele, nom: p.nom, ...(q ? { quantites: q } : {}) } })
+      continue
+    }
+    for (const [genre, valeur] of Object.entries(q ?? {}) as [GenreElement, number][]) {
+      const avant = bien.pieces[i].quantites?.[genre]
+      if (avant === valeur) continue
+      ecarts.push({
+        cle: `nombre-${p.id}-${genre}`,
+        type: 'nombre',
+        index: i,
+        genre,
+        valeur,
+        libelle: `${p.nom} : ${texteNombre(genre, valeur)} (fiche : ${avant === undefined ? 'non renseigné' : texteNombre(genre, avant)})`,
+      })
+    }
+  }
+  return ecarts
+}
+
+/** Applique à la fiche du bien les écarts choisis. Les états des lieux ne sont jamais modifiés. */
+export async function appliquerEcarts(bienId: string, ecarts: EcartFiche[]): Promise<void> {
+  await db.transaction('rw', db.biens, async () => {
+    const b = await db.biens.get(bienId)
+    if (!b) return
+    for (const e of ecarts) {
+      if (e.type === 'piece') b.pieces.push(e.piece)
+      else {
+        const p = b.pieces[e.index]
+        if (p) p.quantites = { ...p.quantites, [e.genre]: e.valeur }
+      }
+    }
+    b.modifieLe = new Date().toISOString()
+    await db.biens.put(b)
+  })
 }
