@@ -6,6 +6,7 @@ import { db } from '../db/base'
 import { LIBELLE_CATEGORIE, bienVide, enregistrerBien } from '../db/patrimoine'
 import type { Bien } from '../db/types'
 import Chargement from '../components/Chargement'
+import PatrimoineGroupe from '../components/PatrimoineGroupe'
 
 const sansAccents = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 
@@ -62,6 +63,8 @@ export default function Patrimoine() {
           </button>
         </div>
       </section>
+
+      <PatrimoineGroupe />
 
       <div className="barre-recherche">
         <Search size={20} />

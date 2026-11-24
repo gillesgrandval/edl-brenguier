@@ -6,6 +6,7 @@ Ce que l'application ne fait pas, ou fait avec des réserves. À connaître avan
 
 - **Les données ne sont que sur l'appareil.** Pas de serveur, pas de synchronisation entre tablettes, ordinateur et téléphone. Une perte ou une panne de la tablette sans sauvegarde récente fait perdre les états des lieux. Sauvegardez régulièrement sur Google Drive (Paramètres).
 - Effacer les données de Chrome pour ce site, ou désinstaller l'application, **efface tout**.
+- Le **patrimoine du groupe** est livré chiffré (AES-256) : sa protection repose entièrement sur la **phrase secrète**. Gardez-la longue (5 mots ou plus), ne l'envoyez pas par e-mail et ne la notez pas sur la tablette. Si elle est oubliée, il suffit de rechiffrer les fiches avec une nouvelle phrase (sur l'ordinateur).
 - La fiche du **lot n° 5 de Hyères** est intégrée au code de l'application, qui est public sur GitHub (choix fait pour éviter un envoi par e-mail). Les autres biens doivent passer par l'import Excel, qui reste sur l'appareil.
 
 ## Signature

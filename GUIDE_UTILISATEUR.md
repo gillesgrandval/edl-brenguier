@@ -153,6 +153,8 @@ La fiche de visite disparaît et l'opération est inscrite au journal. Jusqu'à 
 
 ## Patrimoine
 
+**Patrimoine du groupe (fiches chiffrées).** Les fiches établies d'après les anciens états des lieux sont livrées avec l'application, **chiffrées** : en ligne, personne ne peut les lire. Sur chaque tablette, une seule fois : **Patrimoine** → **« Installer le patrimoine du groupe »** → tapez la **phrase secrète** du Groupe. Quand une nouvelle version des fiches est livrée, le bouton devient « Mettre à jour les fiches » ; une fiche que vous avez modifiée sur la tablette (lot ajouté, par exemple) n'est jamais écrasée.
+
 - **Liste** avec recherche et filtres (ville, type, résidence, société).
 - **Fiche d'un bien** : identification, adresse, caractéristiques, **composition** (pièces, équipements et nombres connus de prises, interrupteurs, points lumineux et climatisations, repris « à vérifier » à chaque visite), compteurs à relever, historique de ses états des lieux, et « Préparer l'état des lieux ».
 - **Importer depuis Excel** : un bien par ligne, une ligne d'en-têtes. L'application reconnaît les colonnes (modifiable), affiche un aperçu avec les erreurs, puis importe. Réimporter un fichier met à jour les biens **sans doublon**, et ne touche jamais aux états des lieux. Un modèle vide est téléchargeable.
