@@ -45,7 +45,7 @@ for (;;) {
   console.log('  Les deux saisies sont différentes. Recommencez.')
 }
 
-const version = new Date().toISOString().slice(0, 10)
+const version = new Date().toISOString().slice(0, 16).replace('T', ' ')
 const paquet = await chiffrer(contenu, phrase, version, contenu.biens.length)
 // Contrôle : le paquet se relit avec la phrase, et ne contient aucun texte en clair.
 const relu = await dechiffrer(paquet, phrase)
