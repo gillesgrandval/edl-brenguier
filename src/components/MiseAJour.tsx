@@ -12,7 +12,18 @@ export default function MiseAJour() {
     needRefresh: [miseAJourDispo, setMiseAJourDispo],
     offlineReady: [horsLignePret, setHorsLignePret],
     updateServiceWorker,
-  } = useRegisterSW()
+  } = useRegisterSW({
+    // L'application reste souvent ouverte en arrière-plan sur la tablette : on cherche une
+    // nouvelle version à chaque retour au premier plan, et toutes les heures.
+    onRegisteredSW(_url, registration) {
+      if (!registration) return
+      const verifier = () => {
+        if (navigator.onLine && !registration.installing) void registration.update().catch(() => undefined)
+      }
+      document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && verifier())
+      window.setInterval(verifier, 60 * 60 * 1000)
+    },
+  })
 
   if (miseAJourDispo) {
     return (
