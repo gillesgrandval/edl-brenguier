@@ -76,9 +76,16 @@ export default function TerminerVisite() {
       {bloquants.length > 0 && (
         <div className="fuite">
           <CircleAlert size={18} /> <strong>À compléter avant de terminer :</strong> {bloquants.join(', ')}.{' '}
-          <button className="bouton bouton-discret bouton-petit" onClick={() => navigate(`/edl/${visite.id}/infos?etape=2`)}>
-            Compléter les parties <ChevronRight size={16} />
-          </button>
+          {bloquants.some((b) => /Locataire|Représentant/.test(b)) && (
+            <button className="bouton bouton-discret bouton-petit" onClick={() => navigate(`/edl/${visite.id}/infos?etape=2`)}>
+              Compléter les parties <ChevronRight size={16} />
+            </button>
+          )}
+          {bloquants.some((b) => /à confirmer/.test(b)) && (
+            <button className="bouton bouton-discret bouton-petit" onClick={() => navigate(`/edl/${visite.id}`)}>
+              Voir les pièces <ChevronRight size={16} />
+            </button>
+          )}
         </div>
       )}
       {rappels.length > 0 && (
@@ -98,7 +105,13 @@ export default function TerminerVisite() {
                 Locataire sortant : <strong>{noms(visite.locataires)}</strong>
               </li>
               <li>Représentant du bailleur : {visite.operateur.nom || 'à renseigner'}</li>
-              <li>{visite.edlEntreeId ? 'Comparatif avec l’état des lieux d’entrée précédent' : 'Sans comparatif (aucune entrée dans l’application)'}</li>
+              <li>
+                {visite.edlEntreeId
+                  ? 'Comparatif avec l’état des lieux d’entrée précédent'
+                  : visite.referenceHistorique
+                    ? `Comparatif et chiffrage d’après l’état des lieux ${visite.referenceHistorique.source} du ${formatDate(visite.referenceHistorique.date)}`
+                    : 'Sans comparatif (aucun état des lieux précédent connu)'}
+              </li>
               <li>Clés restituées : {cles(simulation.sortie)}</li>
               {notes('noteSortie') > 0 && <li>{notes('noteSortie')} observation(s) propre(s) à la sortie</li>}
             </ul>

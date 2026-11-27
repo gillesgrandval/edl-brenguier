@@ -132,7 +132,11 @@ La vétusté suit la grille des Paramètres. Les montants sont des estimations, 
 
 Quand le locataire sortant et le nouveau locataire sont présents ensemble, une seule visite suffit.
 
-1. **Nouvel état des lieux** → choisissez le bien → **« Visite commune : sortie + entrée »**. L'écran indique si l'entrée précédente du bien a été retrouvée dans l'application. Si c'est le cas, l'état à l'entrée s'affiche sur chaque élément. Vous pouvez aussi partir d'une entrée signée : **« Préparer une visite commune »**.
+1. **Nouvel état des lieux** → choisissez le bien → carte **« Visite commune : sortie + entrée »**. Laissez cochée la case **« Pré-remplir avec l'état des lieux précédent »** : si le bien a un état des lieux connu (entrée signée dans l'application, ou ancien état des lieux Opéra Groupe repris dans la fiche du bien), toutes les pièces et tous les éléments arrivent avec leur état, leurs quantités, leurs trous de chevilles et leurs observations. Puis **« Préparer la visite commune »**.
+   - Dans chaque pièce, chaque élément repris porte la mention **« À confirmer »** et rappelle l'état précédent (« Avant : EU »). Si rien n'a changé : **« Toujours le cas »** (l'élément suivant s'ouvre). Sinon, corrigez l'état, les observations ou les quantités : la pastille devient rouge (↘) en cas de dégradation.
+   - **« Tout confirmer »** (en haut de la pièce) valide d'un coup les éléments restants, après avoir constaté que rien n'a changé.
+   - La visite ne peut être terminée que lorsque tous les éléments repris sont confirmés ou corrigés.
+   - Pour la **sortie**, cet état précédent sert de base au **comparatif et au chiffrage** : chaque dégradation apparaît avec la vétusté calculée depuis la date du précédent état des lieux. L'entrée du nouveau locataire, elle, ne contient que le constat du jour.
 2. **Les parties** : le **locataire sortant** (avec sa nouvelle adresse) et le **locataire entrant** se saisissent dans deux blocs séparés. Le représentant du bailleur est commun.
 3. **Parcourez le logement une fois.** Les états, photos et commentaires valent pour les deux documents. Si besoin, chaque élément propose deux observations **propres à un seul document** : « propre à la sortie » (par exemple une contestation du sortant) et « réserve de l'entrant ».
 4. **Clés** : pour chaque ligne, le nombre **restitué** par le sortant et le nombre **remis** à l'entrant. **Compteurs** : relevés une seule fois.

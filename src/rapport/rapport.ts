@@ -22,6 +22,7 @@ import { texteNombre } from '../modeles/comptes'
 import { ETATS, LIBELLE_BIEN, formatDate } from '../libelles'
 import { CHARTE, rvb } from '../theme/charte'
 import { comparer, consommation, elementsParId } from '../db/sortie'
+import { elementDeReference } from '../db/reference'
 import { lireParametres } from '../db/parametres'
 // Charte Groupe Brenguier : logo et police de texte Nunito (licence libre OFL).
 /**
@@ -194,6 +195,8 @@ async function dessinerRapport(source: Edl, avancement: Avancement, preparer: (d
   // Sortie : état des lieux d'entrée de référence (comparaison).
   const entree = edl.typeActe === 'sortie' && edl.edlEntreeId ? await db.edls.get(edl.edlEntreeId) : undefined
   const avant = entree ? elementsParId(entree) : undefined
+  // Sortie pré-remplie d'après un ancien état des lieux (PDF) : l'état repris sert de point de comparaison.
+  const reference = edl.typeActe === 'sortie' && !entree ? edl.referenceHistorique : undefined
   const parametres = await lireParametres()
   // Grille figée à la signature si elle existe, sinon grille actuelle des Paramètres.
   const grille = (edl.grilleVetuste?.grille as typeof parametres.grille | undefined) ?? parametres.grille
@@ -445,13 +448,13 @@ async function dessinerRapport(source: Edl, avancement: Avancement, preparer: (d
     y += 10
 
     // Sortie : colonne « Entrée » (état constaté à l'entrée) avant l'état de sortie.
-    const avecEntree = !!avant
+    const avecEntree = !!avant || !!reference
     const colEtat = avecEntree ? 3 : 2
     const code = (x?: string) => (x ? (ETATS.find((k) => k.cle === x)?.code ?? '') : '-')
     // Une ligne par élément, plus une ligne par unité de climatisation.
     const lignes: { cells: string[]; etat?: Etat; etatEntree?: Etat; unite?: boolean }[] = []
     for (const e of piece.elements) {
-      const ent = avant?.get(e.id)
+      const ent = avant?.get(e.id) ?? (reference ? elementDeReference(e) : undefined)
       const ligne = [
         t(libelleElement(e)),
         t(e.nature),
@@ -521,11 +524,20 @@ async function dessinerRapport(source: Edl, avancement: Avancement, preparer: (d
   // =================================================================
   // 3 bis. Sortie : comparaison avec l'entrée
   // =================================================================
-  if (entree) {
+  if (entree || reference) {
     y += 4
     place(60)
-    section('Comparaison avec l\'état des lieux d\'entrée')
-    paragraphe(`Entrée ${entree.reference} du ${formatDate(entree.dateVisite)} · Sortie du ${formatDate(edl.dateVisite)}`, 9.5, 'normal', GRIS)
+    section(entree ? 'Comparaison avec l\'état des lieux d\'entrée' : 'Comparaison avec le précédent état des lieux')
+    paragraphe(
+      entree
+        ? `Entrée ${entree.reference} du ${formatDate(entree.dateVisite)} · Sortie du ${formatDate(edl.dateVisite)}`
+        : `État des lieux ${reference!.source} du ${formatDate(reference!.date)}${reference!.mission ? ` (mission ${reference!.mission})` : ''} · Sortie du ${formatDate(edl.dateVisite)}. État de chaque élément repris de ce document.`,
+      9.5,
+      'normal',
+      GRIS,
+    )
+  }
+  if (entree) {
     autoTable(doc, {
       ...styleTableau,
       startY: y,
@@ -544,6 +556,8 @@ async function dessinerRapport(source: Edl, avancement: Avancement, preparer: (d
       body: (edl.cles ?? []).map((c) => [t(c.libelle), String(entree.cles?.find((x) => x.id === c.id)?.nombre ?? '-'), String(c.nombre)]),
     })
     y = finTableau() + 4
+  }
+  if (entree || reference) {
     const lignes = comparer(edl, entree, grille).filter((l) => l.evolution === 'degradation' || l.degradation)
     if (lignes.length) {
       police(10.5, 'bold', 'Nunito', BLEU)

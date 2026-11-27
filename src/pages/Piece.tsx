@@ -18,6 +18,7 @@ import {
   Wrench,
   Lock,
   Minus,
+  History,
 } from 'lucide-react'
 import { useEdl } from '../hooks/useEdl'
 import { useLiveQuery } from 'dexie-react-hooks'
@@ -36,6 +37,8 @@ import { BoutonDictee } from '../components/Dictee'
 import Chargement from '../components/Chargement'
 import MemoPiece from '../components/MemoPiece'
 import { appliquerAnalyse } from '../analyse/memo'
+import { elementDeReference } from '../db/reference'
+import { formatDate } from '../libelles'
 
 /**
  * Saisie d'une pièce, élément par élément.
@@ -47,6 +50,7 @@ export default function Piece() {
   const navigate = useNavigate()
   const { edl, modifier, sauvegarde } = useEdl(id)
   const [ouvert, setOuvert] = useState<string | null | undefined>(undefined)
+  const [confirmerTout, setConfirmerTout] = useState(false)
   const [traitement, setTraitement] = useState(0)
   const [renommer, setRenommer] = useState(false)
   const [confirmerSuppression, setConfirmerSuppression] = useState(false)
@@ -85,6 +89,7 @@ export default function Piece() {
   const pr = progressionPiece(piece)
   const finie = pr.total > 0 && pr.faits === pr.total
   const verrouille = edl.statut === 'signe'
+  const aConfirmer = piece.elements.filter((e) => e.aConfirmer).length
 
   const majPiece = (f: (p: TPiece) => void) =>
     modifier((e) => {
@@ -235,13 +240,41 @@ export default function Piece() {
         />
       )}
 
+      {/* --- Éléments repris du précédent état des lieux, à confirmer --- */}
+      {!verrouille && aConfirmer > 0 && (
+        <div className="carte bandeau-visite" style={{ alignItems: 'center' }}>
+          <History size={20} />
+          <div style={{ flex: 1 }}>
+            <strong>{aConfirmer} élément{aConfirmer > 1 ? 's' : ''} repris du précédent état des lieux, à confirmer</strong>
+            <p className="texte-doux" style={{ margin: '4px 0 0' }}>
+              Pour chacun : « Toujours le cas », ou corrigez l'état, les observations, les quantités.
+            </p>
+          </div>
+          <button className="bouton bouton-discret bouton-petit" onClick={() => setConfirmerTout(true)}>
+            <CheckCheck size={18} /> Tout confirmer
+          </button>
+        </div>
+      )}
+      <Confirmation
+        ouvert={confirmerTout}
+        titre="Tout confirmer dans cette pièce ?"
+        message={<>Les {aConfirmer} élément{aConfirmer > 1 ? 's' : ''} non encore vérifié{aConfirmer > 1 ? 's' : ''} de « {piece.nom} » seront enregistrés <strong>dans le même état qu'au précédent état des lieux</strong>. Ne le faites qu'après avoir constaté que rien n'a changé.</>}
+        libelleOk="Oui, tout est toujours le cas"
+        onAnnuler={() => setConfirmerTout(false)}
+        onOk={() => {
+          majPiece((p) => p.elements.forEach((e) => void delete e.aConfirmer))
+          setConfirmerTout(false)
+        }}
+      />
+
       {/* --- Éléments --- */}
       <div className="liste-elements">
         {piece.elements.map((el) => (
           <div key={el.id} ref={(n) => void (refs.current[el.id] = n)} className="ancre-element">
             <CarteElement
               element={el}
-              entree={entree === null || entree === undefined ? undefined : (entree.get(el.id) ?? null)}
+              entree={entree ? (entree.get(el.id) ?? elementDeReference(el) ?? null) : elementDeReference(el)}
+              sourceEntree={el.reference && !entree?.get(el.id) && edl.referenceHistorique ? `État des lieux ${edl.referenceHistorique.source} du ${formatDate(edl.referenceHistorique.date)}` : undefined}
               ouvert={ouvert === el.id}
               verrouille={verrouille}
               commune={!!edl.commune}
@@ -361,6 +394,8 @@ function CarteElement(props: {
   verrouille: boolean
   /** Visite commune : observations propres à la sortie ou à l'entrée. */
   commune?: boolean
+  /** Origine de l'état précédent quand il vient d'un ancien état des lieux (PDF). */
+  sourceEntree?: string
   onBasculer: () => void
   maj: (f: (el: Element) => void) => void
   onSuivant: () => void
@@ -369,7 +404,13 @@ function CarteElement(props: {
   onPhotos: (f: File[], uniteId?: string) => void
   onSupprimerPhoto: (id: string, uniteId?: string) => void
 }) {
-  const { element: el, maj } = props
+  const el = props.element
+  // Toute saisie sur un élément repris vaut vérification sur place.
+  const maj = (f: (x: Element) => void) =>
+    props.maj((x) => {
+      f(x)
+      delete x.aConfirmer
+    })
   const genre = genreDe(el)
   const clim = genre === 'climatisation'
   const etat = ETATS.find((e) => e.cle === el.etat)
@@ -398,7 +439,8 @@ function CarteElement(props: {
             </span>
           )}
         </span>
-        {props.entree !== undefined && <PastilleEntree entree={props.entree} sortie={el} />}
+        {el.aConfirmer && <span className="pastille-entree pastille-a-confirmer">À confirmer</span>}
+        {props.entree !== undefined && <PastilleEntree entree={props.entree} sortie={el} source={props.sourceEntree} />}
         {photosElement(el).length > 0 && (
           <span className="compte-photos">
             <Camera size={15} /> {photosElement(el).length}
@@ -409,7 +451,24 @@ function CarteElement(props: {
 
       {props.ouvert && (
         <fieldset className="carte-element-corps" disabled={props.verrouille}>
-          {props.entree && <RappelEntree entree={props.entree} />}
+          {props.entree && <RappelEntree entree={props.entree} source={props.sourceEntree} />}
+          {el.aConfirmer && (
+            <div className="confirmer-reference">
+              <p>
+                Pré-rempli d'après le précédent état des lieux. Si rien n'a changé, confirmez ; sinon, corrigez ci-dessous.
+              </p>
+              <button
+                type="button"
+                className="bouton bouton-principal"
+                onClick={() => {
+                  maj(() => undefined)
+                  props.onSuivant()
+                }}
+              >
+                <Check size={20} /> Toujours le cas
+              </button>
+            </div>
+          )}
 
           {/* Nombre (prises, interrupteurs, points lumineux, climatisations) */}
           {genre && <ChampNombre element={el} maj={maj} />}
@@ -826,28 +885,29 @@ function AjoutElement(props: { onAnnuler: () => void; onAjouter: (el: Element) =
 
 
 /** Sortie : rappel de l'état d'entrée dans l'en-tête de l'élément, et alerte si l'état s'est dégradé. */
-function PastilleEntree({ entree, sortie }: { entree: Element | null; sortie: Element }) {
+function PastilleEntree({ entree, sortie, source }: { entree: Element | null; sortie: Element; source?: string }) {
   if (entree === null) return <span className="pastille-entree pastille-nouveau">Nouveau</span>
   const e = ETATS.find((x) => x.cle === entree.etat)
   const evo = evolution(entree, sortie)
   return (
-    <span className={`pastille-entree ${evo === 'degradation' ? 'pastille-degradation' : ''}`} title="État à l'entrée">
-      Entrée : {e?.code ?? '—'}
+    <span className={`pastille-entree ${evo === 'degradation' ? 'pastille-degradation' : ''}`} title={source ?? "État à l'entrée"}>
+      {source ? 'Avant' : 'Entrée'} : {e?.code ?? '—'}
       {evo === 'degradation' && ' ↘'}
     </span>
   )
 }
 
 /** Sortie : ce qui avait été constaté à l'entrée pour cet élément. */
-function RappelEntree({ entree }: { entree: Element }) {
+function RappelEntree({ entree, source }: { entree: Element; source?: string }) {
   const e = ETATS.find((x) => x.cle === entree.etat)
   const g = genreDe(entree)
   const nombre = g && entree.quantite !== undefined ? texteNombre(g, entree.quantite) : ''
   const details = [nombre, entree.nature, ...entree.observations, entree.localisation, entree.commentaire].filter(Boolean).join(' · ')
   return (
     <div className="rappel-entree">
-      <strong>À l'entrée :</strong> {e ? `${e.code} — ${e.libelle}` : 'état non renseigné'}
+      <strong>{source ? `${source} :` : "À l'entrée :"}</strong> {e ? `${e.code} — ${e.libelle}` : 'non vérifié'}
       {details && <span> · {details}</span>}
+      {entree.trousChevilles ? <span> · {entree.trousChevilles} trou(s) de cheville</span> : null}
       {entree.photoIds.length > 0 && <span> · {entree.photoIds.length} photo{entree.photoIds.length > 1 ? 's' : ''} (voir le rapport d'entrée)</span>}
     </div>
   )

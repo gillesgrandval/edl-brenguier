@@ -58,14 +58,25 @@ export default function Comparatif() {
           </div>
           <div className="piece-entete-progression">
             <span>
-              {entree ? `Entrée ${entree.reference} du ${formatDate(entree.dateVisite)}` : 'Entrée introuvable sur cet appareil'} · Sortie du {formatDate(edl.dateVisite)}
+              {entree
+                ? `Entrée ${entree.reference} du ${formatDate(entree.dateVisite)}`
+                : edl.referenceHistorique
+                  ? `État des lieux ${edl.referenceHistorique.source} du ${formatDate(edl.referenceHistorique.date)}`
+                  : 'Entrée introuvable sur cet appareil'}{' '}
+              · Sortie du {formatDate(edl.dateVisite)}
             </span>
             <span className={`indicateur-sauvegarde ${sauvegarde}`}>{sauvegarde === 'ok' ? 'Enregistré' : '…'}</span>
           </div>
         </div>
       </div>
 
-      {!entree && <p className="dictee-erreur">L'état des lieux d'entrée n'est pas sur cet appareil : la comparaison est impossible.</p>}
+      {!entree && !edl.referenceHistorique && <p className="dictee-erreur">L'état des lieux d'entrée n'est pas sur cet appareil : la comparaison est impossible.</p>}
+      {!entree && edl.referenceHistorique && (
+        <p className="texte-doux">
+          Comparaison avec l'état relevé dans le précédent état des lieux ({edl.referenceHistorique.source}, {formatDate(edl.referenceHistorique.date)}
+          {edl.referenceHistorique.mission ? `, mission ${edl.referenceHistorique.mission}` : ''}), repris élément par élément. Index des compteurs et nombre de clés de l'époque : voir le PDF d'origine.
+        </p>
+      )}
 
       <Verrou actif={edl.statut === 'signe'} signeLe={edl.cloture?.signeLe}>
         <Section titre="Compteurs">

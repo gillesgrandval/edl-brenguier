@@ -62,6 +62,13 @@ export interface Element {
   observations: string[]
   localisation?: string
   commentaire?: string
+  /**
+   * État constaté au précédent état des lieux (ex. ancien PDF Opéra Groupe), repris pour
+   * cette visite : sert de point de comparaison (évolution, dégradations, chiffrage).
+   */
+  reference?: { etat?: Etat; observations?: string; quantite?: number; trous?: number }
+  /** Pré-rempli d'après l'état précédent : à confirmer (« toujours le cas ») ou à modifier sur place. */
+  aConfirmer?: boolean
   /** Visite commune : observation reprise UNIQUEMENT dans l'état des lieux de sortie. */
   noteSortie?: string
   /** Visite commune : observation (réserve de l'entrant) reprise UNIQUEMENT dans l'état des lieux d'entrée. */
@@ -191,8 +198,36 @@ export interface Edl {
    * par deux états des lieux distincts (sortie et entrée).
    */
   commune?: VisiteCommune
+  /** Éléments pré-remplis d'après un précédent état des lieux hors application (ancien PDF) : sa source et sa date. */
+  referenceHistorique?: SourceReference
   /** État des lieux issu d'une visite commune : référence de la visite et document jumeau. */
   issuDeVisite?: { reference: string; autreId: string; autreReference: string }
+}
+
+export interface SourceReference {
+  /** Ex. « Opéra Groupe ». */
+  source: string
+  /** Date du précédent état des lieux (AAAA-MM-JJ). */
+  date: string
+  mission?: string
+}
+
+/** Élément tel que relevé dans le précédent état des lieux. */
+export interface ElementReference {
+  libelle: string
+  type?: string
+  nature?: string
+  categorie: Categorie
+  equipement: boolean
+  quantite?: number
+  trous?: number
+  etat?: Etat
+  observations?: string
+}
+
+/** État détaillé du bien au précédent état des lieux, pièce par pièce. */
+export interface EtatReference extends SourceReference {
+  pieces: { nom: string; modele: string; elements: ElementReference[] }[]
 }
 
 /** Données propres à une visite commune (rangées à part pour ne jamais être mélangées). */
@@ -426,6 +461,8 @@ export interface Bien {
   infos?: string
   /** Boîte aux lettres : repris dans chaque état des lieux. */
   bal?: { numero?: string; emplacement?: string }
+  /** État détaillé relevé au dernier état des lieux connu (ancien PDF), pour pré-remplir la prochaine visite. */
+  etatReference?: EtatReference
   creeLe: string
   modifieLe: string
 }

@@ -881,3 +881,8 @@ input[type="search"]::-webkit-search-cancel-button { display: none; }
 .document-visite ul { margin: 8px 0 0; padding-left: 20px; }
 .fuite { background: var(--erreur-fond); border: 1px solid var(--erreur-bord); color: var(--erreur-texte); border-radius: 12px; padding: 10px 14px; margin: 10px 0; }
 .ligne-cle-commune > input, .ligne-cle-commune > button { margin-top: 20px; }
+
+/* --- Éléments repris d'un précédent état des lieux --- */
+.pastille-a-confirmer { background: var(--accent-clair); color: var(--accent-texte); border-color: var(--accent); }
+.confirmer-reference { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px; margin-bottom: 12px; border: 1px solid var(--accent); border-radius: 12px; background: color-mix(in srgb, var(--accent-clair) 40%, transparent); }
+.confirmer-reference p { flex: 1; min-width: 200px; margin: 0; }

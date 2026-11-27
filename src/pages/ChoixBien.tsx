@@ -6,7 +6,7 @@ import { db, demanderStockagePersistant } from '../db/base'
 import { creerEdl, maintenantLocal } from '../db/edl'
 import { LIBELLE_CATEGORIE, bienVide, creerEdlDepuisBien, enregistrerBien, libelleBien } from '../db/patrimoine'
 import type { Bien } from '../db/types'
-import { creerVisiteDepuisBien, entreePrecedente } from '../db/visite'
+import { creerVisiteDepuisBien, precedentEtat } from '../db/visite'
 import { libelleActe, formatDate } from '../libelles'
 import { Champ, Section } from '../components/ui'
 import Chargement from '../components/Chargement'
@@ -48,8 +48,12 @@ export default function ChoixBien() {
   // Historique des états des lieux du bien choisi.
   const historique = useLiveQuery(async () => (bienId ? (await db.edls.where('bienId').equals(bienId).toArray()).filter((e) => !e.corbeille).sort((a, b) => b.dateVisite.localeCompare(a.dateVisite)) : []), [bienId])
 
-  // Visite commune : entrée signée précédente du bien (référence de la sortie).
-  const entreeAvant = useLiveQuery(async () => (bienId ? ((await entreePrecedente(bienId)) ?? null) : null), [bienId])
+  // Visite commune : précédent état des lieux du bien (entrée signée dans l'application, ou ancien PDF).
+  const precedent = useLiveQuery(async () => {
+    const b = bienId ? await db.biens.get(bienId) : undefined
+    return b ? await precedentEtat(b) : null
+  }, [bienId])
+  const [preRemplir, setPreRemplir] = useState(true)
 
   if (biens === undefined) return <Chargement />
 
@@ -73,7 +77,7 @@ export default function ChoixBien() {
     if (!choisi || enCours) return
     setEnCours(true)
     await demanderStockagePersistant()
-    const id = await creerVisiteDepuisBien(choisi, date)
+    const id = await creerVisiteDepuisBien(choisi, date, preRemplir)
     navigate(`/edl/${id}/infos`, { replace: true })
   }
 
@@ -146,7 +150,7 @@ export default function ChoixBien() {
               label={residences.length > 0 ? '4. Référence / lot' : '3. Référence / lot'}
               valeur={bienId}
               vide={candidats.length ? `Choisir parmi ${candidats.length} bien${candidats.length > 1 ? 's' : ''}` : 'Aucun bien'}
-              options={candidats.map((b) => [b.id, `${b.reference || `Lot ${b.lot}`}${b.typologie ? ` · ${b.typologie}` : ''}`])}
+              options={candidats.map((b) => [b.id, `${b.reference || `Lot ${b.lot}`}${b.typologie && !(b.reference ?? '').includes(b.typologie) ? ` · ${b.typologie}` : ''}`])}
               onChange={setBienId}
             />
           </div>
@@ -192,21 +196,30 @@ export default function ChoixBien() {
               <button className="bouton bouton-accent bouton-signer" onClick={preparer} disabled={enCours}>
                 Préparer l'état des lieux <ChevronRight size={22} />
               </button>
-              <button className="carte tuile-ligne" style={{ marginTop: 12 }} onClick={visiteCommune} disabled={enCours || entreeAvant === undefined}>
-                <span className="tuile-ligne-icone">
-                  <ArrowRightLeft size={22} />
-                </span>
-                <span className="tuile-ligne-texte">
-                  <strong>Visite commune : sortie + entrée</strong>
-                  <span className="texte-doux">
-                    Le locataire sortant et le nouveau locataire le même jour : une seule visite, puis deux états des lieux séparés.{' '}
-                    {entreeAvant
-                      ? `Comparatif avec l'entrée ${entreeAvant.reference} du ${formatDate(entreeAvant.dateVisite)}.`
-                      : "Aucune entrée signée de ce bien dans l'application : sortie sans comparatif automatique."}
-                  </span>
-                </span>
-                <ChevronRight />
-              </button>
+              <div className="carte rubrique-carte" style={{ marginTop: 12 }}>
+                <div className="bloc-titre">
+                  <ArrowRightLeft size={16} /> Visite commune : sortie + entrée
+                </div>
+                <p className="texte-doux" style={{ marginTop: 0 }}>
+                  Le locataire sortant et le nouveau locataire le même jour : une seule visite, puis deux états des lieux séparés.
+                </p>
+                {precedent ? (
+                  <label className="certification" style={{ margin: '0 0 12px' }}>
+                    <input type="checkbox" checked={preRemplir} onChange={(e) => setPreRemplir(e.target.checked)} />
+                    <span>
+                      <strong>Pré-remplir avec l'état des lieux précédent</strong> —{' '}
+                      {precedent.type === 'pdf'
+                        ? `état des lieux ${precedent.source} du ${formatDate(precedent.date)} : chaque pièce et chaque élément arrivent avec leur état, leurs quantités et leurs observations (trous, taches…). Sur place, vous confirmez « toujours le cas » ou vous corrigez. Cet état sert ensuite de comparaison pour le chiffrage de la sortie.`
+                        : `entrée ${precedent.edl.reference} du ${formatDate(precedent.edl.dateVisite)} : rappelée sur chaque élément et utilisée pour le comparatif et le chiffrage de la sortie.`}
+                    </span>
+                  </label>
+                ) : (
+                  <p className="texte-doux">Aucun état des lieux précédent connu pour ce bien : la sortie se fera sans comparatif automatique.</p>
+                )}
+                <button className="bouton bouton-principal" onClick={visiteCommune} disabled={enCours || precedent === undefined}>
+                  <ArrowRightLeft size={20} /> Préparer la visite commune
+                </button>
+              </div>
             </div>
           )}
         </div>

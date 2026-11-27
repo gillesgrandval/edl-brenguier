@@ -230,7 +230,7 @@ export default function TableauDeBord() {
           <ChevronRight />
         </button>
       )}
-      {edl.typeActe === 'sortie' && edl.edlEntreeId && (
+      {edl.typeActe === 'sortie' && (edl.edlEntreeId || edl.referenceHistorique) && (
         <button className="carte tuile-ligne" style={{ marginBottom: 12 }} onClick={() => navigate(`/edl/${edl.id}/comparatif`)}>
           <span className="tuile-ligne-icone">
             <GitCompareArrows size={22} />

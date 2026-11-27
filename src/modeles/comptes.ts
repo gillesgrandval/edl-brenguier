@@ -56,6 +56,8 @@ export function photosElement(el: Element): string[] {
  * Climatisation : « aucune » (0 constaté) suffit ; avec des unités, chacune doit avoir son état.
  */
 export function elementFait(el: Element): boolean {
+  // Repris d'un précédent état des lieux : il faut le confirmer ou le modifier sur place.
+  if (el.aConfirmer) return false
   if (genreDe(el) === 'climatisation') {
     if (el.quantiteSource) return false
     if (el.quantite === 0) return true

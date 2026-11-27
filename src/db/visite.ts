@@ -21,6 +21,7 @@ import { normaliser, prochaineReference } from './edl'
 import { creerSortieDepuisEntree } from './sortie'
 import { creerEdlDepuisBien } from './patrimoine'
 import type { Bien, Edl, Personne } from './types'
+import { nbAConfirmer, piecesDepuisReference } from './reference'
 
 /** Référence d'une visite commune, ex. « VC-2026-003 » (compteur distinct des états des lieux). */
 export async function prochaineReferenceVisite(): Promise<string> {
@@ -56,12 +57,33 @@ export async function creerVisiteDepuisEntree(entree: Edl, dateVisite?: string):
   return id
 }
 
-/** Visite commune depuis la fiche d'un bien : avec l'entrée précédente si elle existe, sinon sans comparatif. */
-export async function creerVisiteDepuisBien(bien: Bien, dateVisite: string): Promise<string> {
+/**
+ * Précédent état des lieux du bien : la dernière entrée signée dans l'application,
+ * ou l'état relevé dans un ancien PDF (fiche du patrimoine) s'il est plus récent.
+ */
+export async function precedentEtat(bien: Bien): Promise<{ type: 'application'; edl: Edl } | { type: 'pdf'; date: string; source: string } | null> {
   const entree = await entreePrecedente(bien.id)
-  if (entree) return creerVisiteDepuisEntree(entree, dateVisite)
+  const ref = bien.etatReference
+  if (ref && (!entree || entree.dateVisite.slice(0, 10) < ref.date)) return { type: 'pdf', date: ref.date, source: ref.source }
+  return entree ? { type: 'application', edl: entree } : null
+}
+
+/**
+ * Visite commune depuis la fiche d'un bien.
+ * `preRemplir` : pièces et éléments repris du précédent état des lieux (état, quantités,
+ * observations), à confirmer sur place ; sinon composition de la fiche, sans constat.
+ */
+export async function creerVisiteDepuisBien(bien: Bien, dateVisite: string, preRemplir = true): Promise<string> {
+  const precedent = preRemplir ? await precedentEtat(bien) : null
+  if (precedent?.type === 'application') return creerVisiteDepuisEntree(precedent.edl, dateVisite)
   const id = await creerEdlDepuisBien(bien, dateVisite, await prochaineReferenceVisite())
   await marquerCommune(id)
+  if (precedent?.type === 'pdf' && bien.etatReference) {
+    const { pieces, source, date, mission } = bien.etatReference
+    const e = await db.edls.get(id)
+    if (e && pieces.length)
+      await db.edls.put({ ...e, pieces: piecesDepuisReference({ pieces, source, date, mission }), referenceHistorique: { source, date, ...(mission ? { mission } : {}) } })
+  }
   return id
 }
 
@@ -121,6 +143,7 @@ export function scinderVisite(visite: Edl, p: ParametresScission): { sortie: Edl
       delete el.noteEntree
     }
   for (const cle of sortie.cles ?? []) delete cle.nombreRemis
+  for (const piece of sortie.pieces) for (const el of piece.elements) delete el.aConfirmer
   sortie.issuDeVisite = { reference: visite.reference, autreId: p.idEntree, autreReference: p.refEntree }
 
   // B. Entrée : locataires entrants uniquement ; rien qui vienne du sortant ni de la sortie.
@@ -137,11 +160,15 @@ export function scinderVisite(visite: Edl, p: ParametresScission): { sortie: Edl
   delete entree.degradations
   delete entree.grilleVetuste
   delete entree.dateRestitutionCles
+  delete entree.referenceHistorique
   for (const piece of entree.pieces)
     for (const el of piece.elements) {
       el.commentaire = joindre(el.commentaire, el.noteEntree)
       delete el.noteSortie
       delete el.noteEntree
+      // L'état précédent ne sert qu'à la sortie (comparaison et chiffrage).
+      delete el.reference
+      delete el.aConfirmer
     }
   for (const cle of entree.cles ?? []) {
     cle.nombre = cle.nombreRemis ?? cle.nombre
@@ -264,6 +291,8 @@ export function preparationVisite(v: Edl): { bloquants: string[]; rappels: strin
   if (!v.locataires.some((l) => l.nom.trim())) bloquants.push('Locataire sortant (nom)')
   if (!v.commune?.entrants.some((l) => l.nom.trim())) bloquants.push('Locataire entrant (nom)')
   if (!v.operateur.nom.trim()) bloquants.push('Représentant du bailleur (nom)')
+  const n = nbAConfirmer(v)
+  if (n) bloquants.push(`${n} élément${n > 1 ? 's' : ''} repris de l'état des lieux précédent à confirmer ou corriger`)
   if (!v.nouvelleAdresseLocataire?.trim()) rappels.push('Nouvelle adresse du locataire sortant')
   return { bloquants, rappels }
 }

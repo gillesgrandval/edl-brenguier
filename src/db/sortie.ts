@@ -10,6 +10,7 @@
 import { db, nouvelId } from './base'
 import { genreDe } from '../modeles/comptes'
 import { normaliser, prochaineReference } from './edl'
+import { elementDeReference } from './reference'
 import type { Degradation, Edl, Element, Etat, Piece } from './types'
 import { GRILLE_VETUSTE, ageEnAnnees, categorieVetuste, tauxVetuste, type CategorieVetuste, type LigneGrille } from '../modeles/vetuste'
 
@@ -110,12 +111,13 @@ export function comparer(sortie: Edl, entree: Edl | undefined | null, grille: Re
   const lignes: LigneComparatif[] = []
   for (const p of sortie.pieces)
     for (const el of p.elements) {
-      const ent = avant.get(el.id)
+      // État précédent : l'entrée de l'application, sinon l'état repris d'un ancien état des lieux (PDF).
+      const ent = avant.get(el.id) ?? elementDeReference(el)
       const evo = evolution(ent, el)
       const deg = sortie.degradations?.[el.id]
       const cat = categorieVetuste(el)
       const g = grille[cat]
-      const age = ageEnAnnees(deg?.depuis ?? entree?.dateVisite ?? sortie.dateVisite, sortie.dateVisite)
+      const age = ageEnAnnees(deg?.depuis ?? entree?.dateVisite ?? sortie.referenceHistorique?.date ?? sortie.dateVisite, sortie.dateVisite)
       const vetuste = tauxVetuste(g, age)
       const imputable = deg ? deg.imputable : evo === 'degradation'
       const partLocataire = imputable ? 100 - vetuste : 0

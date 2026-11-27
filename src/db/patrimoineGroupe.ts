@@ -50,6 +50,8 @@ export async function installerPatrimoineGroupe(phrase: string): Promise<Resulta
     for (const b of contenu.biens) {
       const existant = await db.biens.get(b.id)
       if (existant && precedente && existant.modifieLe > precedente.installeLe) {
+        // Fiche modifiée sur l'appareil : conservée, mais l'état détaillé du précédent état des lieux est mis à jour.
+        if (b.etatReference) await db.biens.put({ ...existant, etatReference: b.etatReference })
         r.conservees++
         continue
       }
